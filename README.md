@@ -7,7 +7,7 @@
 
 ###Usage:
 	
-* involve NSObject-Safe.h/NSObject-Safe.m as build phases
+* involve NSObjectSafe.h/NSObjectSafe.m as build phases
 
 ###Swizzle Functions:
 
