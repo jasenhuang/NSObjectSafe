@@ -107,6 +107,10 @@
         /* init方法 */
         NSString* obj = [NSString alloc];//NSPlaceholderString
         [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(safeInitWithCString:encoding:)];
+        
+        /* 普通方法 */
+        obj = [[NSString alloc] init];
+        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(safeStringByAppendingString:)];
     });
 }
 + (NSString*) safeStringWithUTF8String:(const char *)nullTerminatedCString
@@ -133,6 +137,13 @@
     NSAssert(NO, @"NSString invalid args safeInitWithCString nil cstring");
     return nil;
 }
+- (NSString *)safeStringByAppendingString:(NSString *)aString
+{
+    if (aString){
+        return [self safeStringByAppendingString:aString];
+    }
+    return self;
+}
 
 @end
 
@@ -151,6 +162,7 @@
         [obj swizzleInstanceMethod:@selector(appendString:) withMethod:@selector(safeAppendString:)];
         [obj swizzleInstanceMethod:@selector(insertString:atIndex:) withMethod:@selector(safeInsertString:atIndex:)];
         [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(safeDeleteCharactersInRange:)];
+        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(safeStringByAppendingString:)];
     });
 }
 - (nullable instancetype) safeInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
@@ -184,6 +196,13 @@
     }else{
         NSAssert1(NO, @"NSMutableString invalid args safeDeleteCharactersInRange:[%@]", NSStringFromRange(range));
     }
+}
+- (NSString *)safeStringByAppendingString:(NSString *)aString
+{
+    if (aString){
+        return [self safeStringByAppendingString:aString];
+    }
+    return self;
 }
 @end
 

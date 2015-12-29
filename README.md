@@ -30,6 +30,7 @@
 + (NSString*) stringWithUTF8String:(const char *)nullTerminatedCString;
 + (nullable instancetype) stringWithCString:(const char *)cString encoding:(NSStringEncoding)enc;
 - (nullable instancetype) initWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding;
+- (NSString *)stringByAppendingString:(NSString *)aString;
 ```
 
 * NSMutableString
@@ -39,6 +40,7 @@
 - (void) appendString:(NSString *)aString;
 - (void) insertString:(NSString *)aString atIndex:(NSUInteger)loc;
 - (void) deleteCharactersInRange:(NSRange)range;
+- (NSString *)stringByAppendingString:(NSString *)aString;
 ```
 
 * NSArray
