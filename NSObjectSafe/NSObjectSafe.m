@@ -359,65 +359,6 @@
 
 @end
 
-@implementation NSUserDefaults(Safe)
-+ (void)load
-{
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSUserDefaults* obj = [[NSUserDefaults alloc] init];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(safeObjectForKey:)];
-        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(safeSetObject:forKey:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(safeRemoveObjectForKey:)];
-        
-        [obj swizzleInstanceMethod:@selector(integerForKey:) withMethod:@selector(safeIntegerForKey:)];
-        [obj swizzleInstanceMethod:@selector(boolForKey:) withMethod:@selector(safeBoolForKey:)];
-    
-    });
-}
-- (id) safeObjectForKey:(NSString *)defaultName
-{
-    if (defaultName) {
-        return [self safeObjectForKey:defaultName];
-    }
-    return nil;
-}
-
-- (NSInteger) safeIntegerForKey:(NSString *)defaultName
-{
-    if (defaultName) {
-        return [self safeIntegerForKey:defaultName];
-    }
-    return 0;
-}
-
-- (BOOL) safeBoolForKey:(NSString *)defaultName
-{
-    if (defaultName) {
-        return [self safeBoolForKey:defaultName];
-    }
-    return NO;
-}
-
-- (void) safeSetObject:(id)value forKey:(NSString*)aKey
-{
-    if (aKey) {
-        [self safeSetObject:value forKey:aKey];
-    } else {
-        NSAssert2(NO, @"NSUserDefaults invalid args safeSetObject:[%@] forKey:[%@]", value, aKey);
-    }
-}
-- (void) safeRemoveObjectForKey:(NSString*)aKey
-{
-    if (aKey) {
-        [self safeRemoveObjectForKey:aKey];
-    } else {
-        NSAssert1(NO, @"NSUserDefaults invalid args safeRemoveObjectForKey:[%@]", aKey);
-    }
-}
-
-@end
-
-
 #pragma mark - NSSet
 @implementation NSSet (Safe)
 + (void)load
@@ -561,4 +502,63 @@
         NSAssert2(NO, @"NSMutableOrderedSet invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(idx), object);
     }
 }
+@end
+
+#pragma mark - NSUserDefaults
+@implementation NSUserDefaults(Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSUserDefaults* obj = [[NSUserDefaults alloc] init];
+        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(safeObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(safeSetObject:forKey:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(safeRemoveObjectForKey:)];
+        
+        [obj swizzleInstanceMethod:@selector(integerForKey:) withMethod:@selector(safeIntegerForKey:)];
+        [obj swizzleInstanceMethod:@selector(boolForKey:) withMethod:@selector(safeBoolForKey:)];
+        
+    });
+}
+- (id) safeObjectForKey:(NSString *)defaultName
+{
+    if (defaultName) {
+        return [self safeObjectForKey:defaultName];
+    }
+    return nil;
+}
+
+- (NSInteger) safeIntegerForKey:(NSString *)defaultName
+{
+    if (defaultName) {
+        return [self safeIntegerForKey:defaultName];
+    }
+    return 0;
+}
+
+- (BOOL) safeBoolForKey:(NSString *)defaultName
+{
+    if (defaultName) {
+        return [self safeBoolForKey:defaultName];
+    }
+    return NO;
+}
+
+- (void) safeSetObject:(id)value forKey:(NSString*)aKey
+{
+    if (aKey) {
+        [self safeSetObject:value forKey:aKey];
+    } else {
+        NSAssert2(NO, @"NSUserDefaults invalid args safeSetObject:[%@] forKey:[%@]", value, aKey);
+    }
+}
+- (void) safeRemoveObjectForKey:(NSString*)aKey
+{
+    if (aKey) {
+        [self safeRemoveObjectForKey:aKey];
+    } else {
+        NSAssert1(NO, @"NSUserDefaults invalid args safeRemoveObjectForKey:[%@]", aKey);
+    }
+}
+
 @end
