@@ -9,6 +9,17 @@
 #import "NSObjectSafe.h"
 #import <objc/runtime.h>
 
+#define SFAssert(condition, ...) \
+if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
+NSAssert(condition, @"%@", __VA_ARGS__);
+
+void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
+{
+    va_list args; va_start(args, fmt);
+    NSLog(@"%s|%s|%d|%@", file, func, line, [[NSString alloc] initWithFormat:fmt arguments:args]);
+    va_end(args);
+}
+
 @implementation NSObject(Swizzle)
 + (void)swizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
@@ -68,7 +79,7 @@
 - (void) safeAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
 {
     if (!observer || !keyPath.length) {
-        NSAssert1(NO, @"safeAddObserver invalid args: %@", self);
+        SFAssert(NO, @"safeAddObserver invalid args: %@", self);
         return;
     }
     @try {
@@ -81,7 +92,7 @@
 - (void) safeRemoveObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath
 {
     if (!observer || !keyPath.length) {
-        NSAssert1(NO, @"safeRemoveObserver invalid args: %@", self);
+        SFAssert(NO, @"safeRemoveObserver invalid args: %@", self);
         return;
     }
     @try {
@@ -118,7 +129,7 @@
     if (NULL != nullTerminatedCString) {
         return [NSString safeStringWithUTF8String:nullTerminatedCString];
     }
-    NSAssert(NO, @"NSString invalid args safeStringWithUTF8String nil cstring");
+    SFAssert(NO, @"NSString invalid args safeStringWithUTF8String nil cstring");
     return nil;
 }
 + (nullable instancetype) safeStringWithCString:(const char *)cString encoding:(NSStringEncoding)enc
@@ -126,7 +137,7 @@
     if (NULL != cString){
         return [self safeStringWithCString:cString encoding:enc];
     }
-    NSAssert(NO, @"NSString invalid args safeStringWithCString nil cstring");
+    SFAssert(NO, @"NSString invalid args safeStringWithCString nil cstring");
     return nil;
 }
 - (nullable instancetype) safeInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
@@ -134,7 +145,7 @@
     if (NULL != nullTerminatedCString){
         return [self safeInitWithCString:nullTerminatedCString encoding:encoding];
     }
-    NSAssert(NO, @"NSString invalid args safeInitWithCString nil cstring");
+    SFAssert(NO, @"NSString invalid args safeInitWithCString nil cstring");
     return nil;
 }
 - (NSString *)safeStringByAppendingString:(NSString *)aString
@@ -170,7 +181,7 @@
     if (NULL != nullTerminatedCString){
         return [self safeInitWithCString:nullTerminatedCString encoding:encoding];
     }
-    NSAssert(NO, @"NSMutableString invalid args safeInitWithCString nil cstring");
+    SFAssert(NO, @"NSMutableString invalid args safeInitWithCString nil cstring");
     return nil;
 }
 - (void) safeAppendString:(NSString *)aString
@@ -178,7 +189,7 @@
     if (aString){
         [self safeAppendString:aString];
     }else{
-        NSAssert1(NO, @"NSMutableString invalid args safeAppendString:[%@]", aString);
+        SFAssert(NO, @"NSMutableString invalid args safeAppendString:[%@]", aString);
     }
 }
 - (void) safeInsertString:(NSString *)aString atIndex:(NSUInteger)loc
@@ -186,7 +197,7 @@
     if (aString && loc <= self.length) {
         [self safeInsertString:aString atIndex:loc];
     }else{
-        NSAssert2(NO, @"NSMutableString invalid args safeInsertString:[%@] atIndex:[%@]", aString, @(loc));
+        SFAssert(NO, @"NSMutableString invalid args safeInsertString:[%@] atIndex:[%@]", aString, @(loc));
     }
 }
 - (void) safeDeleteCharactersInRange:(NSRange)range
@@ -194,7 +205,7 @@
     if (range.location < self.length && range.location + range.length < self.length){
         [self safeDeleteCharactersInRange:range];
     }else{
-        NSAssert1(NO, @"NSMutableString invalid args safeDeleteCharactersInRange:[%@]", NSStringFromRange(range));
+        SFAssert(NO, @"NSMutableString invalid args safeDeleteCharactersInRange:[%@]", NSStringFromRange(range));
     }
 }
 - (NSString *)safeStringByAppendingString:(NSString *)aString
@@ -225,7 +236,7 @@
     if (anObject) {
         return [self safeArrayWithObject:anObject];
     }
-    NSAssert1(NO, @"NSArray invalid args safeArrayWithObject:[%@]", anObject);
+    SFAssert(NO, @"NSArray invalid args safeArrayWithObject:[%@]", anObject);
     return nil;
 }
 - (id) safeObjectAtIndex:(NSUInteger)index {
@@ -256,7 +267,7 @@
     if (anObject) {
         [self safeAddObject:anObject];
     } else {
-        NSAssert1(NO, @"NSMutableArray invalid args safeAddObject:[%@]", anObject);
+        SFAssert(NO, @"NSMutableArray invalid args safeAddObject:[%@]", anObject);
     }
 }
 - (id) safeObjectAtIndex:(NSUInteger)index {
@@ -270,10 +281,10 @@
         [self safeInsertObject:anObject atIndex:index];
     } else {
         if (!anObject) {
-            NSAssert2(NO, @"NSMutableArray invalid args safeInsertObject:[%@] atIndex:[%@]", anObject, @(index));
+            SFAssert(NO, @"NSMutableArray invalid args safeInsertObject:[%@] atIndex:[%@]", anObject, @(index));
         }
         if (index > self.count) {
-            NSAssert3(NO, @"NSMutableArray safeInsertObject[%@] atIndex:[%@] out of bound:[%@]", anObject, @(index), @(self.count));
+            SFAssert(NO, @"NSMutableArray safeInsertObject[%@] atIndex:[%@] out of bound:[%@]", anObject, @(index), @(self.count));
         }
     }
 }
@@ -282,7 +293,7 @@
     if (index < self.count) {
         [self safeRemoveObjectAtIndex:index];
     } else {
-        NSAssert2(NO, @"NSMutableArray safeRemoveObjectAtIndex:[%@] out of bound:[%@]", @(index), @(self.count));
+        SFAssert(NO, @"NSMutableArray safeRemoveObjectAtIndex:[%@] out of bound:[%@]", @(index), @(self.count));
     }
 }
 
@@ -292,10 +303,10 @@
         [self safeReplaceObjectAtIndex:index withObject:anObject];
     } else {
         if (!anObject) {
-            NSAssert2(NO, @"NSMutableArray invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(index), anObject);
+            SFAssert(NO, @"NSMutableArray invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(index), anObject);
         }
         if (index >= self.count) {
-            NSAssert3(NO, @"NSMutableArray safeReplaceObjectAtIndex:[%@] withObject:[%@] out of bound:[%@]", @(index), anObject, @(self.count));
+            SFAssert(NO, @"NSMutableArray safeReplaceObjectAtIndex:[%@] withObject:[%@] out of bound:[%@]", @(index), anObject, @(self.count));
         }
     }
 }
@@ -304,7 +315,7 @@
     if (range.location < self.count && range.location + range.length < self.count) {
         [self safeRemoveObjectsInRange:range];
     }else {
-        NSAssert(NO, @"NSMutableArray invalid args safeRemoveObjectsInRange:[%@]", NSStringFromRange(range));
+        SFAssert(NO, @"NSMutableArray invalid args safeRemoveObjectsInRange:[%@]", NSStringFromRange(range));
     }
 }
 
@@ -329,7 +340,7 @@
     if (object && key) {
         return [self safeDictionaryWithObject:object forKey:key];
     }
-    NSAssert2(NO, @"NSDictionary invalid args safeDictionaryWithObject:[%@] forKey:[%@]", object, key);
+    SFAssert(NO, @"NSDictionary invalid args safeDictionaryWithObject:[%@] forKey:[%@]", object, key);
     return nil;
 }
 - (id) safeObjectForKey:(id)aKey
@@ -364,7 +375,7 @@
     if (anObject && aKey) {
         [self safeSetObject:anObject forKey:aKey];
     } else {
-        NSAssert2(NO, @"NSMutableDictionary invalid args safeSetObject:[%@] forKey:[%@]", anObject, aKey);
+        SFAssert(NO, @"NSMutableDictionary invalid args safeSetObject:[%@] forKey:[%@]", anObject, aKey);
     }
 }
 
@@ -372,7 +383,7 @@
     if (aKey) {
         [self safeRemoveObjectForKey:aKey];
     } else {
-        NSAssert1(NO, @"NSMutableDictionary invalid args safeRemoveObjectForKey:[%@]", aKey);
+        SFAssert(NO, @"NSMutableDictionary invalid args safeRemoveObjectForKey:[%@]", aKey);
     }
 }
 
@@ -393,7 +404,7 @@
     if (object){
         return [self safeSetWithObject:object];
     }
-    NSAssert1(NO, @"NSSet invalid args safeSetWithObject:[%@]", object);
+    SFAssert(NO, @"NSSet invalid args safeSetWithObject:[%@]", object);
     return nil;
 }
 @end
@@ -413,7 +424,7 @@
     if (object) {
         [self safeAddObject:object];
     } else {
-        NSAssert1(NO, @"NSMutableSet invalid args safeAddObject[%@]", object);
+        SFAssert(NO, @"NSMutableSet invalid args safeAddObject[%@]", object);
     }
 }
 
@@ -421,7 +432,7 @@
     if (object) {
         [self safeRemoveObject:object];
     } else {
-        NSAssert1(NO, @"NSMutableSet invalid args safeRemoveObject[%@]", object);
+        SFAssert(NO, @"NSMutableSet invalid args safeRemoveObject[%@]", object);
     }
 }
 @end
@@ -449,7 +460,7 @@
     if (object) {
         return [self safeOrderedSetWithObject:object];
     }
-    NSAssert1(NO, @"NSOrderedSet invalid args safeOrderedSetWithObject:[%@]", object);
+    SFAssert(NO, @"NSOrderedSet invalid args safeOrderedSetWithObject:[%@]", object);
     return nil;
 }
 - (instancetype)safeInitWithObject:(id)object
@@ -457,7 +468,7 @@
     if (object){
         return [self safeInitWithObject:object];
     }
-    NSAssert1(NO, @"NSOrderedSet invalid args safeInitWithObject:[%@]", object);
+    SFAssert(NO, @"NSOrderedSet invalid args safeInitWithObject:[%@]", object);
     return nil;
 }
 - (id)safeObjectAtIndex:(NSUInteger)idx
@@ -494,7 +505,7 @@
     if (object) {
         [self safeAddObject:object];
     } else {
-        NSAssert1(NO, @"NSMutableOrderedSet invalid args safeAddObject:[%@]", object);
+        SFAssert(NO, @"NSMutableOrderedSet invalid args safeAddObject:[%@]", object);
     }
 }
 - (void)safeInsertObject:(id)object atIndex:(NSUInteger)idx
@@ -502,7 +513,7 @@
     if (object && idx <= self.count) {
         [self safeInsertObject:object atIndex:idx];
     }else{
-        NSAssert2(NO, @"NSMutableOrderedSet invalid args safeInsertObject:[%@] atIndex:[%@]", object, @(idx));
+        SFAssert(NO, @"NSMutableOrderedSet invalid args safeInsertObject:[%@] atIndex:[%@]", object, @(idx));
     }
 }
 - (void)safeRemoveObjectAtIndex:(NSUInteger)idx
@@ -510,7 +521,7 @@
     if (idx < self.count){
         [self safeRemoveObjectAtIndex:idx];
     }else{
-        NSAssert1(NO, @"NSMutableOrderedSet invalid args safeRemoveObjectAtIndex:[%@]", @(idx));
+        SFAssert(NO, @"NSMutableOrderedSet invalid args safeRemoveObjectAtIndex:[%@]", @(idx));
     }
 }
 - (void)safeReplaceObjectAtIndex:(NSUInteger)idx withObject:(id)object
@@ -518,7 +529,7 @@
     if (object && idx < self.count) {
         [self safeReplaceObjectAtIndex:idx withObject:object];
     }else{
-        NSAssert2(NO, @"NSMutableOrderedSet invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(idx), object);
+        SFAssert(NO, @"NSMutableOrderedSet invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(idx), object);
     }
 }
 @end
@@ -568,7 +579,7 @@
     if (aKey) {
         [self safeSetObject:value forKey:aKey];
     } else {
-        NSAssert2(NO, @"NSUserDefaults invalid args safeSetObject:[%@] forKey:[%@]", value, aKey);
+        SFAssert(NO, @"NSUserDefaults invalid args safeSetObject:[%@] forKey:[%@]", value, aKey);
     }
 }
 - (void) safeRemoveObjectForKey:(NSString*)aKey
@@ -576,7 +587,7 @@
     if (aKey) {
         [self safeRemoveObjectForKey:aKey];
     } else {
-        NSAssert1(NO, @"NSUserDefaults invalid args safeRemoveObjectForKey:[%@]", aKey);
+        SFAssert(NO, @"NSUserDefaults invalid args safeRemoveObjectForKey:[%@]", aKey);
     }
 }
 

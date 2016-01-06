@@ -33,6 +33,9 @@
     NSMutableString* mstr = [[NSMutableString alloc] init];
     [mstr appendString:@"hello"];
     [mstr stringByAppendingString:nil];
+    
+    NSMutableArray* array = [NSMutableArray array];
+    [array addObject:nil];
 }
 
 - (void)testPerformanceExample {
