@@ -226,9 +226,13 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 类方法不用在NSMutableArray里再swizz一次 */
         [NSArray swizzleClassMethod:@selector(arrayWithObject:) withMethod:@selector(safeArrayWithObject:)];
         
-        /* 数组有内容obj类型才是__NSArrayI，没内容类型是__NSArray0 */
+        /* 数组有内容obj类型才是__NSArrayI */
         NSArray* obj = [[NSArray alloc] initWithObjects:@0, nil];
         [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex:)];
+        
+        /* 没内容类型是__NSArray0 */
+        obj = [[NSArray alloc] init];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex0:)];
     });
 }
 + (instancetype) safeArrayWithObject:(id)anObject
@@ -237,6 +241,10 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self safeArrayWithObject:anObject];
     }
     SFAssert(NO, @"NSArray invalid args safeArrayWithObject:[%@]", anObject);
+    return nil;
+}
+/* __NSArray0 没有元素，也不可以变 */
+- (id) safeObjectAtIndex0:(NSUInteger)index {
     return nil;
 }
 - (id) safeObjectAtIndex:(NSUInteger)index {
