@@ -23,12 +23,12 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 @implementation NSObject(Swizzle)
 + (void)swizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
-    Class class = [self class];
+    Class cls = [self class];
     
-    Method originalMethod = class_getClassMethod(class, origSelector);
-    Method swizzledMethod = class_getClassMethod(class, newSelector);
+    Method originalMethod = class_getClassMethod(cls, origSelector);
+    Method swizzledMethod = class_getClassMethod(cls, newSelector);
     
-    Class metacls = objc_getMetaClass(NSStringFromClass(class).UTF8String);
+    Class metacls = objc_getMetaClass(NSStringFromClass(cls).UTF8String);
     if (class_addMethod(metacls,
                         origSelector,
                         method_getImplementation(swizzledMethod),
@@ -45,17 +45,17 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 - (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
-    Class class = [self class];
+    Class cls = [self class];
     
-    Method originalMethod = class_getInstanceMethod(class, origSelector);
-    Method swizzledMethod = class_getInstanceMethod(class, newSelector);
+    Method originalMethod = class_getInstanceMethod(cls, origSelector);
+    Method swizzledMethod = class_getInstanceMethod(cls, newSelector);
     
-    if (class_addMethod(class,
+    if (class_addMethod(cls,
                         origSelector,
                         method_getImplementation(swizzledMethod),
                         method_getTypeEncoding(swizzledMethod)) ) {
         /*swizzing super class instance method, added if not exist */
-        class_replaceMethod(class,
+        class_replaceMethod(cls,
                             newSelector,
                             method_getImplementation(originalMethod),
                             method_getTypeEncoding(originalMethod));
@@ -160,14 +160,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 - (NSString *)hookSubstringFromIndex:(NSUInteger)from
 {
-    if (from < self.length) {
+    if (from <= self.length) {
         return [self hookSubstringFromIndex:from];
     }
     return nil;
 }
 - (NSString *)hookSubstringToIndex:(NSUInteger)to
 {
-    if (to < self.length) {
+    if (to <= self.length) {
         return [self hookSubstringToIndex:to];
     }
     return self;
@@ -230,7 +230,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 - (void) hookDeleteCharactersInRange:(NSRange)range
 {
-    if (range.location < self.length && range.location + range.length < self.length){
+    if (range.location + range.length <= self.length){
         [self hookDeleteCharactersInRange:range];
     }else{
         SFAssert(NO, @"NSMutableString invalid args hookDeleteCharactersInRange:[%@]", NSStringFromRange(range));
@@ -245,14 +245,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 - (NSString *)hookSubstringFromIndex:(NSUInteger)from
 {
-    if (from < self.length) {
+    if (from <= self.length) {
         return [self hookSubstringFromIndex:from];
     }
     return nil;
 }
 - (NSString *)hookSubstringToIndex:(NSUInteger)to
 {
-    if (to < self.length) {
+    if (to <= self.length) {
         return [self hookSubstringToIndex:to];
     }
     return self;
@@ -343,7 +343,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 - (id) hookObjectAtIndex:(NSUInteger)index {
-    if (index < self.count) {
+    if (index <= self.count) {
         return [self hookObjectAtIndex:index];
     }
     return nil;
@@ -384,7 +384,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 
 - (void) hookRemoveObjectsInRange:(NSRange)range {
-    if (range.location < self.count && range.location + range.length < self.count) {
+    if (range.location + range.length <= self.count) {
         [self hookRemoveObjectsInRange:range];
     }else {
         SFAssert(NO, @"NSMutableArray invalid args hookRemoveObjectsInRange:[%@]", NSStringFromRange(range));

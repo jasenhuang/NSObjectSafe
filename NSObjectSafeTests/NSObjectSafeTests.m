@@ -28,6 +28,25 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
+    
+    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, @3, nil];
+    //[array subarrayWithRange:NSMakeRange(1, 3)];
+    //[array removeObjectAtIndex:1];
+    [array addObject:nil];
+    [array removeObjectAtIndex:3];
+    [array removeObjectsInRange:NSMakeRange(3, 2)];
+    
+//    NSString* string = @"12345";
+//    [string substringFromIndex:6];
+//    [string substringToIndex:6];
+//    [string substringWithRange:NSMakeRange(0, 6)];
+//    
+//    NSMutableString* mstring = [NSMutableString string];
+//    [mstring appendString:@"12345"];
+//    [mstring substringFromIndex:6];
+//    [mstring substringToIndex:6];
+//    [mstring substringWithRange:NSMakeRange(6, 0)];
+    
 }
 
 - (void)testPerformanceExample {
