@@ -11,7 +11,7 @@
 
 #define SFAssert(condition, ...) \
 if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
-NSAssert(condition, @"%@", __VA_ARGS__);
+//NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
@@ -72,34 +72,34 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSObject* obj = [[NSObject alloc] init];
-        [obj swizzleInstanceMethod:@selector(addObserver:forKeyPath:options:context:) withMethod:@selector(safeAddObserver:forKeyPath:options:context:)];
-        [obj swizzleInstanceMethod:@selector(removeObserver:forKeyPath:) withMethod:@selector(safeRemoveObserver:forKeyPath:)];
+        [obj swizzleInstanceMethod:@selector(addObserver:forKeyPath:options:context:) withMethod:@selector(hookAddObserver:forKeyPath:options:context:)];
+        [obj swizzleInstanceMethod:@selector(removeObserver:forKeyPath:) withMethod:@selector(hookRemoveObserver:forKeyPath:)];
     });
 }
-- (void) safeAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
+- (void) hookAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
 {
     if (!observer || !keyPath.length) {
-        SFAssert(NO, @"safeAddObserver invalid args: %@", self);
+        SFAssert(NO, @"hookAddObserver invalid args: %@", self);
         return;
     }
     @try {
-        [self safeAddObserver:observer forKeyPath:keyPath options:options context:context];
+        [self hookAddObserver:observer forKeyPath:keyPath options:options context:context];
     }
     @catch (NSException *exception) {
-        NSLog(@"safeAddObserver ex: %@", [exception callStackSymbols]);
+        NSLog(@"hookAddObserver ex: %@", [exception callStackSymbols]);
     }
 }
-- (void) safeRemoveObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath
+- (void) hookRemoveObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath
 {
     if (!observer || !keyPath.length) {
-        SFAssert(NO, @"safeRemoveObserver invalid args: %@", self);
+        SFAssert(NO, @"hookRemoveObserver invalid args: %@", self);
         return;
     }
     @try {
-        [self safeRemoveObserver:observer forKeyPath:keyPath];
+        [self hookRemoveObserver:observer forKeyPath:keyPath];
     }
     @catch (NSException *exception) {
-        NSLog(@"safeRemoveObserver ex: %@", [exception callStackSymbols]);
+        NSLog(@"hookRemoveObserver ex: %@", [exception callStackSymbols]);
     }
 }
 
@@ -112,50 +112,75 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /* 类方法不用在NSMutableString里再swizz一次 */
-        [NSString swizzleClassMethod:@selector(stringWithUTF8String:) withMethod:@selector(safeStringWithUTF8String:)];
-        [NSString swizzleClassMethod:@selector(stringWithCString:encoding:) withMethod:@selector(safeStringWithCString:encoding:)];
+        [NSString swizzleClassMethod:@selector(stringWithUTF8String:) withMethod:@selector(hookStringWithUTF8String:)];
+        [NSString swizzleClassMethod:@selector(stringWithCString:encoding:) withMethod:@selector(hookStringWithCString:encoding:)];
         
         /* init方法 */
         NSString* obj = [NSString alloc];//NSPlaceholderString
-        [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(safeInitWithCString:encoding:)];
+        [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
         
         /* 普通方法 */
         obj = [[NSString alloc] init];
-        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(safeStringByAppendingString:)];
+        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(hookStringByAppendingString:)];
+        [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
+        [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
+        [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
     });
 }
-+ (NSString*) safeStringWithUTF8String:(const char *)nullTerminatedCString
++ (NSString*) hookStringWithUTF8String:(const char *)nullTerminatedCString
 {
     if (NULL != nullTerminatedCString) {
-        return [NSString safeStringWithUTF8String:nullTerminatedCString];
+        return [NSString hookStringWithUTF8String:nullTerminatedCString];
     }
-    SFAssert(NO, @"NSString invalid args safeStringWithUTF8String nil cstring");
+    SFAssert(NO, @"NSString invalid args hookStringWithUTF8String nil cstring");
     return nil;
 }
-+ (nullable instancetype) safeStringWithCString:(const char *)cString encoding:(NSStringEncoding)enc
++ (nullable instancetype) hookStringWithCString:(const char *)cString encoding:(NSStringEncoding)enc
 {
     if (NULL != cString){
-        return [self safeStringWithCString:cString encoding:enc];
+        return [self hookStringWithCString:cString encoding:enc];
     }
-    SFAssert(NO, @"NSString invalid args safeStringWithCString nil cstring");
+    SFAssert(NO, @"NSString invalid args hookStringWithCString nil cstring");
     return nil;
 }
-- (nullable instancetype) safeInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
+- (nullable instancetype) hookInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
 {
     if (NULL != nullTerminatedCString){
-        return [self safeInitWithCString:nullTerminatedCString encoding:encoding];
+        return [self hookInitWithCString:nullTerminatedCString encoding:encoding];
     }
-    SFAssert(NO, @"NSString invalid args safeInitWithCString nil cstring");
+    SFAssert(NO, @"NSString invalid args hookInitWithCString nil cstring");
     return nil;
 }
-- (NSString *)safeStringByAppendingString:(NSString *)aString
+- (NSString *)hookStringByAppendingString:(NSString *)aString
 {
     if (aString){
-        return [self safeStringByAppendingString:aString];
+        return [self hookStringByAppendingString:aString];
     }
     return self;
 }
-
+- (NSString *)hookSubstringFromIndex:(NSUInteger)from
+{
+    if (from < self.length) {
+        return [self hookSubstringFromIndex:from];
+    }
+    return nil;
+}
+- (NSString *)hookSubstringToIndex:(NSUInteger)to
+{
+    if (to < self.length) {
+        return [self hookSubstringToIndex:to];
+    }
+    return self;
+}
+- (NSString *)hookSubstringWithRange:(NSRange)range
+{
+    if (range.location + range.length <= self.length) {
+        return [self hookSubstringWithRange:range];
+    }else if (range.location < self.length){
+        return [self hookSubstringWithRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+    return nil;
+}
 @end
 
 @implementation NSMutableString (Safe)
@@ -166,54 +191,80 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         
         /* init方法 */
         NSMutableString* obj = [NSMutableString alloc];//NSPlaceholderMutableString
-        [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(safeInitWithCString:encoding:)];
+        [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
         
         /* 普通方法 */
         obj = [[NSMutableString alloc] init];
-        [obj swizzleInstanceMethod:@selector(appendString:) withMethod:@selector(safeAppendString:)];
-        [obj swizzleInstanceMethod:@selector(insertString:atIndex:) withMethod:@selector(safeInsertString:atIndex:)];
-        [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(safeDeleteCharactersInRange:)];
-        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(safeStringByAppendingString:)];
+        [obj swizzleInstanceMethod:@selector(appendString:) withMethod:@selector(hookAppendString:)];
+        [obj swizzleInstanceMethod:@selector(insertString:atIndex:) withMethod:@selector(hookInsertString:atIndex:)];
+        [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(hookDeleteCharactersInRange:)];
+        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(hookStringByAppendingString:)];
+        [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
+        [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
+        [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
     });
 }
-- (nullable instancetype) safeInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
+- (nullable instancetype) hookInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
 {
     if (NULL != nullTerminatedCString){
-        return [self safeInitWithCString:nullTerminatedCString encoding:encoding];
+        return [self hookInitWithCString:nullTerminatedCString encoding:encoding];
     }
-    SFAssert(NO, @"NSMutableString invalid args safeInitWithCString nil cstring");
+    SFAssert(NO, @"NSMutableString invalid args hookInitWithCString nil cstring");
     return nil;
 }
-- (void) safeAppendString:(NSString *)aString
+- (void) hookAppendString:(NSString *)aString
 {
     if (aString){
-        [self safeAppendString:aString];
+        [self hookAppendString:aString];
     }else{
-        SFAssert(NO, @"NSMutableString invalid args safeAppendString:[%@]", aString);
+        SFAssert(NO, @"NSMutableString invalid args hookAppendString:[%@]", aString);
     }
 }
-- (void) safeInsertString:(NSString *)aString atIndex:(NSUInteger)loc
+- (void) hookInsertString:(NSString *)aString atIndex:(NSUInteger)loc
 {
     if (aString && loc <= self.length) {
-        [self safeInsertString:aString atIndex:loc];
+        [self hookInsertString:aString atIndex:loc];
     }else{
-        SFAssert(NO, @"NSMutableString invalid args safeInsertString:[%@] atIndex:[%@]", aString, @(loc));
+        SFAssert(NO, @"NSMutableString invalid args hookInsertString:[%@] atIndex:[%@]", aString, @(loc));
     }
 }
-- (void) safeDeleteCharactersInRange:(NSRange)range
+- (void) hookDeleteCharactersInRange:(NSRange)range
 {
     if (range.location < self.length && range.location + range.length < self.length){
-        [self safeDeleteCharactersInRange:range];
+        [self hookDeleteCharactersInRange:range];
     }else{
-        SFAssert(NO, @"NSMutableString invalid args safeDeleteCharactersInRange:[%@]", NSStringFromRange(range));
+        SFAssert(NO, @"NSMutableString invalid args hookDeleteCharactersInRange:[%@]", NSStringFromRange(range));
     }
 }
-- (NSString *)safeStringByAppendingString:(NSString *)aString
+- (NSString *)hookStringByAppendingString:(NSString *)aString
 {
     if (aString){
-        return [self safeStringByAppendingString:aString];
+        return [self hookStringByAppendingString:aString];
     }
     return self;
+}
+- (NSString *)hookSubstringFromIndex:(NSUInteger)from
+{
+    if (from < self.length) {
+        return [self hookSubstringFromIndex:from];
+    }
+    return nil;
+}
+- (NSString *)hookSubstringToIndex:(NSUInteger)to
+{
+    if (to < self.length) {
+        return [self hookSubstringToIndex:to];
+    }
+    return self;
+}
+- (NSString *)hookSubstringWithRange:(NSRange)range
+{
+    if (range.location + range.length <= self.length) {
+        return [self hookSubstringWithRange:range];
+    }else if (range.location < self.length){
+        return [self hookSubstringWithRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+    return nil;
 }
 @end
 
@@ -224,32 +275,44 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /* 类方法不用在NSMutableArray里再swizz一次 */
-        [NSArray swizzleClassMethod:@selector(arrayWithObject:) withMethod:@selector(safeArrayWithObject:)];
+        [NSArray swizzleClassMethod:@selector(arrayWithObject:) withMethod:@selector(hookArrayWithObject:)];
         
         /* 数组有内容obj类型才是__NSArrayI */
         NSArray* obj = [[NSArray alloc] initWithObjects:@0, nil];
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
         
         /* 没内容类型是__NSArray0 */
         obj = [[NSArray alloc] init];
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex0:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex0:)];
+        [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+        
     });
 }
-+ (instancetype) safeArrayWithObject:(id)anObject
++ (instancetype) hookArrayWithObject:(id)anObject
 {
     if (anObject) {
-        return [self safeArrayWithObject:anObject];
+        return [self hookArrayWithObject:anObject];
     }
-    SFAssert(NO, @"NSArray invalid args safeArrayWithObject:[%@]", anObject);
+    SFAssert(NO, @"NSArray invalid args hookArrayWithObject:[%@]", anObject);
     return nil;
 }
 /* __NSArray0 没有元素，也不可以变 */
-- (id) safeObjectAtIndex0:(NSUInteger)index {
+- (id) hookObjectAtIndex0:(NSUInteger)index {
     return nil;
 }
-- (id) safeObjectAtIndex:(NSUInteger)index {
+- (id) hookObjectAtIndex:(NSUInteger)index {
     if (index < self.count) {
-        return [self safeObjectAtIndex:index];
+        return [self hookObjectAtIndex:index];
+    }
+    return nil;
+}
+- (NSArray *)hookSubarrayWithRange:(NSRange)range
+{
+    if (range.location + range.length <= self.count){
+        return [self hookSubarrayWithRange:range];
+    }else if (range.location < self.count){
+        return [self hookSubarrayWithRange:NSMakeRange(range.location, self.count-range.location)];
     }
     return nil;
 }
@@ -262,69 +325,80 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     dispatch_once(&onceToken, ^{
         NSMutableArray* obj = [[NSMutableArray alloc] init];
         //对象方法 __NSArrayM 和 __NSArrayI 都有实现，都要swizz
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
         
-        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(safeAddObject:)];
-        [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(safeInsertObject:atIndex:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectAtIndex:) withMethod:@selector(safeRemoveObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(safeReplaceObjectAtIndex:withObject:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectsInRange:) withMethod:@selector(safeRemoveObjectsInRange:)];
+        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(hookAddObject:)];
+        [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(hookInsertObject:atIndex:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectAtIndex:) withMethod:@selector(hookRemoveObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(hookReplaceObjectAtIndex:withObject:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectsInRange:) withMethod:@selector(hookRemoveObjectsInRange:)];
+        [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
     });
 }
-- (void) safeAddObject:(id)anObject {
+- (void) hookAddObject:(id)anObject {
     if (anObject) {
-        [self safeAddObject:anObject];
+        [self hookAddObject:anObject];
     } else {
-        SFAssert(NO, @"NSMutableArray invalid args safeAddObject:[%@]", anObject);
+        SFAssert(NO, @"NSMutableArray invalid args hookAddObject:[%@]", anObject);
     }
 }
-- (id) safeObjectAtIndex:(NSUInteger)index {
+- (id) hookObjectAtIndex:(NSUInteger)index {
     if (index < self.count) {
-        return [self safeObjectAtIndex:index];
+        return [self hookObjectAtIndex:index];
     }
     return nil;
 }
-- (void) safeInsertObject:(id)anObject atIndex:(NSUInteger)index {
+- (void) hookInsertObject:(id)anObject atIndex:(NSUInteger)index {
     if (anObject && index <= self.count) {
-        [self safeInsertObject:anObject atIndex:index];
+        [self hookInsertObject:anObject atIndex:index];
     } else {
         if (!anObject) {
-            SFAssert(NO, @"NSMutableArray invalid args safeInsertObject:[%@] atIndex:[%@]", anObject, @(index));
+            SFAssert(NO, @"NSMutableArray invalid args hookInsertObject:[%@] atIndex:[%@]", anObject, @(index));
         }
         if (index > self.count) {
-            SFAssert(NO, @"NSMutableArray safeInsertObject[%@] atIndex:[%@] out of bound:[%@]", anObject, @(index), @(self.count));
+            SFAssert(NO, @"NSMutableArray hookInsertObject[%@] atIndex:[%@] out of bound:[%@]", anObject, @(index), @(self.count));
         }
     }
 }
 
-- (void) safeRemoveObjectAtIndex:(NSUInteger)index {
+- (void) hookRemoveObjectAtIndex:(NSUInteger)index {
     if (index < self.count) {
-        [self safeRemoveObjectAtIndex:index];
+        [self hookRemoveObjectAtIndex:index];
     } else {
-        SFAssert(NO, @"NSMutableArray safeRemoveObjectAtIndex:[%@] out of bound:[%@]", @(index), @(self.count));
+        SFAssert(NO, @"NSMutableArray hookRemoveObjectAtIndex:[%@] out of bound:[%@]", @(index), @(self.count));
     }
 }
 
 
-- (void) safeReplaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject {
+- (void) hookReplaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject {
     if (index < self.count && anObject) {
-        [self safeReplaceObjectAtIndex:index withObject:anObject];
+        [self hookReplaceObjectAtIndex:index withObject:anObject];
     } else {
         if (!anObject) {
-            SFAssert(NO, @"NSMutableArray invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(index), anObject);
+            SFAssert(NO, @"NSMutableArray invalid args hookReplaceObjectAtIndex:[%@] withObject:[%@]", @(index), anObject);
         }
         if (index >= self.count) {
-            SFAssert(NO, @"NSMutableArray safeReplaceObjectAtIndex:[%@] withObject:[%@] out of bound:[%@]", @(index), anObject, @(self.count));
+            SFAssert(NO, @"NSMutableArray hookReplaceObjectAtIndex:[%@] withObject:[%@] out of bound:[%@]", @(index), anObject, @(self.count));
         }
     }
 }
 
-- (void) safeRemoveObjectsInRange:(NSRange)range {
+- (void) hookRemoveObjectsInRange:(NSRange)range {
     if (range.location < self.count && range.location + range.length < self.count) {
-        [self safeRemoveObjectsInRange:range];
+        [self hookRemoveObjectsInRange:range];
     }else {
-        SFAssert(NO, @"NSMutableArray invalid args safeRemoveObjectsInRange:[%@]", NSStringFromRange(range));
+        SFAssert(NO, @"NSMutableArray invalid args hookRemoveObjectsInRange:[%@]", NSStringFromRange(range));
     }
+}
+
+- (NSArray *)hookSubarrayWithRange:(NSRange)range
+{
+    if (range.location + range.length <= self.count){
+        return [self hookSubarrayWithRange:range];
+    }else if (range.location < self.count){
+        return [self hookSubarrayWithRange:NSMakeRange(range.location, self.count-range.location)];
+    }
+    return nil;
 }
 
 @end
@@ -336,25 +410,25 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /* 类方法 */
-        [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(safeDictionaryWithObject:forKey:)];
+        [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(hookDictionaryWithObject:forKey:)];
         
         /* 数组有内容obj类型才是__NSDictionaryI，没内容类型是__NSDictionary0 */
         NSDictionary* obj = [NSDictionary dictionaryWithObjectsAndKeys:@0,@0,nil];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(safeObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
     });
 }
-+ (instancetype) safeDictionaryWithObject:(id)object forKey:(id)key
++ (instancetype) hookDictionaryWithObject:(id)object forKey:(id)key
 {
     if (object && key) {
-        return [self safeDictionaryWithObject:object forKey:key];
+        return [self hookDictionaryWithObject:object forKey:key];
     }
-    SFAssert(NO, @"NSDictionary invalid args safeDictionaryWithObject:[%@] forKey:[%@]", object, key);
+    SFAssert(NO, @"NSDictionary invalid args hookDictionaryWithObject:[%@] forKey:[%@]", object, key);
     return nil;
 }
-- (id) safeObjectForKey:(id)aKey
+- (id) hookObjectForKey:(id)aKey
 {
     if (aKey){
-        return [self safeObjectForKey:aKey];
+        return [self hookObjectForKey:aKey];
     }
     return nil;
 }
@@ -367,31 +441,31 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSMutableDictionary* obj = [[NSMutableDictionary alloc] init];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(safeObjectForKey:)];
-        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(safeSetObject:forKey:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(safeRemoveObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(hookSetObject:forKey:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(hookRemoveObjectForKey:)];
     });
 }
-- (id) safeObjectForKey:(id)aKey
+- (id) hookObjectForKey:(id)aKey
 {
     if (aKey){
-        return [self safeObjectForKey:aKey];
+        return [self hookObjectForKey:aKey];
     }
     return nil;
 }
-- (void) safeSetObject:(id)anObject forKey:(id)aKey {
+- (void) hookSetObject:(id)anObject forKey:(id)aKey {
     if (anObject && aKey) {
-        [self safeSetObject:anObject forKey:aKey];
+        [self hookSetObject:anObject forKey:aKey];
     } else {
-        SFAssert(NO, @"NSMutableDictionary invalid args safeSetObject:[%@] forKey:[%@]", anObject, aKey);
+        SFAssert(NO, @"NSMutableDictionary invalid args hookSetObject:[%@] forKey:[%@]", anObject, aKey);
     }
 }
 
-- (void) safeRemoveObjectForKey:(id)aKey {
+- (void) hookRemoveObjectForKey:(id)aKey {
     if (aKey) {
-        [self safeRemoveObjectForKey:aKey];
+        [self hookRemoveObjectForKey:aKey];
     } else {
-        SFAssert(NO, @"NSMutableDictionary invalid args safeRemoveObjectForKey:[%@]", aKey);
+        SFAssert(NO, @"NSMutableDictionary invalid args hookRemoveObjectForKey:[%@]", aKey);
     }
 }
 
@@ -404,15 +478,15 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /* 类方法 */
-        [NSSet swizzleClassMethod:@selector(setWithObject:) withMethod:@selector(safeSetWithObject:)];
+        [NSSet swizzleClassMethod:@selector(setWithObject:) withMethod:@selector(hookSetWithObject:)];
     });
 }
-+ (instancetype)safeSetWithObject:(id)object
++ (instancetype)hookSetWithObject:(id)object
 {
     if (object){
-        return [self safeSetWithObject:object];
+        return [self hookSetWithObject:object];
     }
-    SFAssert(NO, @"NSSet invalid args safeSetWithObject:[%@]", object);
+    SFAssert(NO, @"NSSet invalid args hookSetWithObject:[%@]", object);
     return nil;
 }
 @end
@@ -424,23 +498,23 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     dispatch_once(&onceToken, ^{
         /* 普通方法 */
         NSMutableSet* obj = [NSMutableSet setWithObjects:@0, nil];
-        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(safeAddObject:)];
-        [obj swizzleInstanceMethod:@selector(removeObject:) withMethod:@selector(safeRemoveObject:)];
+        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(hookAddObject:)];
+        [obj swizzleInstanceMethod:@selector(removeObject:) withMethod:@selector(hookRemoveObject:)];
     });
 }
-- (void) safeAddObject:(id)object {
+- (void) hookAddObject:(id)object {
     if (object) {
-        [self safeAddObject:object];
+        [self hookAddObject:object];
     } else {
-        SFAssert(NO, @"NSMutableSet invalid args safeAddObject[%@]", object);
+        SFAssert(NO, @"NSMutableSet invalid args hookAddObject[%@]", object);
     }
 }
 
-- (void) safeRemoveObject:(id)object {
+- (void) hookRemoveObject:(id)object {
     if (object) {
-        [self safeRemoveObject:object];
+        [self hookRemoveObject:object];
     } else {
-        SFAssert(NO, @"NSMutableSet invalid args safeRemoveObject[%@]", object);
+        SFAssert(NO, @"NSMutableSet invalid args hookRemoveObject[%@]", object);
     }
 }
 @end
@@ -452,37 +526,37 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         /* 类方法 */
-        [NSOrderedSet swizzleClassMethod:@selector(orderedSetWithObject:) withMethod:@selector(safeOrderedSetWithObject:)];
+        [NSOrderedSet swizzleClassMethod:@selector(orderedSetWithObject:) withMethod:@selector(hookOrderedSetWithObject:)];
         
         /* init方法:[NSOrderedSet alloc] 和 [NSMutableOrderedSet alloc] 返回的类是一样   */
         NSOrderedSet* obj = [NSOrderedSet alloc];
-        [obj swizzleInstanceMethod:@selector(initWithObject:) withMethod:@selector(safeInitWithObject:)];
+        [obj swizzleInstanceMethod:@selector(initWithObject:) withMethod:@selector(hookInitWithObject:)];
         
         /* 普通方法 */
         obj = [NSOrderedSet orderedSetWithObjects:@0, nil];
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
     });
 }
-+ (instancetype)safeOrderedSetWithObject:(id)object
++ (instancetype)hookOrderedSetWithObject:(id)object
 {
     if (object) {
-        return [self safeOrderedSetWithObject:object];
+        return [self hookOrderedSetWithObject:object];
     }
-    SFAssert(NO, @"NSOrderedSet invalid args safeOrderedSetWithObject:[%@]", object);
+    SFAssert(NO, @"NSOrderedSet invalid args hookOrderedSetWithObject:[%@]", object);
     return nil;
 }
-- (instancetype)safeInitWithObject:(id)object
+- (instancetype)hookInitWithObject:(id)object
 {
     if (object){
-        return [self safeInitWithObject:object];
+        return [self hookInitWithObject:object];
     }
-    SFAssert(NO, @"NSOrderedSet invalid args safeInitWithObject:[%@]", object);
+    SFAssert(NO, @"NSOrderedSet invalid args hookInitWithObject:[%@]", object);
     return nil;
 }
-- (id)safeObjectAtIndex:(NSUInteger)idx
+- (id)hookObjectAtIndex:(NSUInteger)idx
 {
     if (idx < self.count){
-        return [self safeObjectAtIndex:idx];
+        return [self hookObjectAtIndex:idx];
     }
     return nil;
 }
@@ -495,49 +569,49 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     dispatch_once(&onceToken, ^{
         /* 普通方法 */
         NSMutableOrderedSet* obj = [NSMutableOrderedSet orderedSetWithObjects:@0, nil];
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(safeObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(safeAddObject:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectAtIndex:) withMethod:@selector(safeRemoveObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(safeInsertObject:atIndex:)];
-        [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(safeReplaceObjectAtIndex:withObject:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(hookAddObject:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectAtIndex:) withMethod:@selector(hookRemoveObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(hookInsertObject:atIndex:)];
+        [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(hookReplaceObjectAtIndex:withObject:)];
     });
 }
-- (id)safeObjectAtIndex:(NSUInteger)idx
+- (id)hookObjectAtIndex:(NSUInteger)idx
 {
     if (idx < self.count){
-        return [self safeObjectAtIndex:idx];
+        return [self hookObjectAtIndex:idx];
     }
     return nil;
 }
-- (void)safeAddObject:(id)object {
+- (void)hookAddObject:(id)object {
     if (object) {
-        [self safeAddObject:object];
+        [self hookAddObject:object];
     } else {
-        SFAssert(NO, @"NSMutableOrderedSet invalid args safeAddObject:[%@]", object);
+        SFAssert(NO, @"NSMutableOrderedSet invalid args hookAddObject:[%@]", object);
     }
 }
-- (void)safeInsertObject:(id)object atIndex:(NSUInteger)idx
+- (void)hookInsertObject:(id)object atIndex:(NSUInteger)idx
 {
     if (object && idx <= self.count) {
-        [self safeInsertObject:object atIndex:idx];
+        [self hookInsertObject:object atIndex:idx];
     }else{
-        SFAssert(NO, @"NSMutableOrderedSet invalid args safeInsertObject:[%@] atIndex:[%@]", object, @(idx));
+        SFAssert(NO, @"NSMutableOrderedSet invalid args hookInsertObject:[%@] atIndex:[%@]", object, @(idx));
     }
 }
-- (void)safeRemoveObjectAtIndex:(NSUInteger)idx
+- (void)hookRemoveObjectAtIndex:(NSUInteger)idx
 {
     if (idx < self.count){
-        [self safeRemoveObjectAtIndex:idx];
+        [self hookRemoveObjectAtIndex:idx];
     }else{
-        SFAssert(NO, @"NSMutableOrderedSet invalid args safeRemoveObjectAtIndex:[%@]", @(idx));
+        SFAssert(NO, @"NSMutableOrderedSet invalid args hookRemoveObjectAtIndex:[%@]", @(idx));
     }
 }
-- (void)safeReplaceObjectAtIndex:(NSUInteger)idx withObject:(id)object
+- (void)hookReplaceObjectAtIndex:(NSUInteger)idx withObject:(id)object
 {
     if (object && idx < self.count) {
-        [self safeReplaceObjectAtIndex:idx withObject:object];
+        [self hookReplaceObjectAtIndex:idx withObject:object];
     }else{
-        SFAssert(NO, @"NSMutableOrderedSet invalid args safeReplaceObjectAtIndex:[%@] withObject:[%@]", @(idx), object);
+        SFAssert(NO, @"NSMutableOrderedSet invalid args hookReplaceObjectAtIndex:[%@] withObject:[%@]", @(idx), object);
     }
 }
 @end
@@ -549,53 +623,53 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSUserDefaults* obj = [[NSUserDefaults alloc] init];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(safeObjectForKey:)];
-        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(safeSetObject:forKey:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(safeRemoveObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(hookSetObject:forKey:)];
+        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(hookRemoveObjectForKey:)];
         
-        [obj swizzleInstanceMethod:@selector(integerForKey:) withMethod:@selector(safeIntegerForKey:)];
-        [obj swizzleInstanceMethod:@selector(boolForKey:) withMethod:@selector(safeBoolForKey:)];
+        [obj swizzleInstanceMethod:@selector(integerForKey:) withMethod:@selector(hookIntegerForKey:)];
+        [obj swizzleInstanceMethod:@selector(boolForKey:) withMethod:@selector(hookBoolForKey:)];
         
     });
 }
-- (id) safeObjectForKey:(NSString *)defaultName
+- (id) hookObjectForKey:(NSString *)defaultName
 {
     if (defaultName) {
-        return [self safeObjectForKey:defaultName];
+        return [self hookObjectForKey:defaultName];
     }
     return nil;
 }
 
-- (NSInteger) safeIntegerForKey:(NSString *)defaultName
+- (NSInteger) hookIntegerForKey:(NSString *)defaultName
 {
     if (defaultName) {
-        return [self safeIntegerForKey:defaultName];
+        return [self hookIntegerForKey:defaultName];
     }
     return 0;
 }
 
-- (BOOL) safeBoolForKey:(NSString *)defaultName
+- (BOOL) hookBoolForKey:(NSString *)defaultName
 {
     if (defaultName) {
-        return [self safeBoolForKey:defaultName];
+        return [self hookBoolForKey:defaultName];
     }
     return NO;
 }
 
-- (void) safeSetObject:(id)value forKey:(NSString*)aKey
+- (void) hookSetObject:(id)value forKey:(NSString*)aKey
 {
     if (aKey) {
-        [self safeSetObject:value forKey:aKey];
+        [self hookSetObject:value forKey:aKey];
     } else {
-        SFAssert(NO, @"NSUserDefaults invalid args safeSetObject:[%@] forKey:[%@]", value, aKey);
+        SFAssert(NO, @"NSUserDefaults invalid args hookSetObject:[%@] forKey:[%@]", value, aKey);
     }
 }
-- (void) safeRemoveObjectForKey:(NSString*)aKey
+- (void) hookRemoveObjectForKey:(NSString*)aKey
 {
     if (aKey) {
-        [self safeRemoveObjectForKey:aKey];
+        [self hookRemoveObjectForKey:aKey];
     } else {
-        SFAssert(NO, @"NSUserDefaults invalid args safeRemoveObjectForKey:[%@]", aKey);
+        SFAssert(NO, @"NSUserDefaults invalid args hookRemoveObjectForKey:[%@]", aKey);
     }
 }
 

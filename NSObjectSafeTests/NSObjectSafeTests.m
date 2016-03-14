@@ -28,14 +28,6 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
-    NSString* str = @"hello";
-    [str stringByAppendingString:nil];
-    NSMutableString* mstr = [[NSMutableString alloc] init];
-    [mstr appendString:@"hello"];
-    [mstr stringByAppendingString:nil];
-    
-    NSMutableArray* array = [NSMutableArray array];
-    [array addObject:nil];
 }
 
 - (void)testPerformanceExample {
