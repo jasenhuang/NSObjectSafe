@@ -130,7 +130,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 + (NSString*) hookStringWithUTF8String:(const char *)nullTerminatedCString
 {
     if (NULL != nullTerminatedCString) {
-        return [NSString hookStringWithUTF8String:nullTerminatedCString];
+        return [self hookStringWithUTF8String:nullTerminatedCString];
     }
     SFAssert(NO, @"NSString invalid args hookStringWithUTF8String nil cstring");
     return nil;
