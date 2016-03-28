@@ -283,7 +283,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
         
         /* iOS9 以上，没内容类型是__NSArray0 */
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] > 9){
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
             obj = [[NSArray alloc] init];
             [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex0:)];
             [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
