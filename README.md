@@ -1,15 +1,17 @@
 # NSObject-Safe
 
 
-###Desciption
+### Desciption
 * Swizzle commonly used function of Foundation container to prevent nil crash
-* Assert when in Debug and log when in Release
+* Assert in Debug and log in Release
 
-###Usage:
+### Usage:
 	
 * involve NSObjectSafe.h/NSObjectSafe.m as build phases
 
-###Swizzle Functions:
+### Warn: NSObjectSafe must used in MRC, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+
+### Swizzle Functions:
 
 * NSObject(Swizzle):
 
