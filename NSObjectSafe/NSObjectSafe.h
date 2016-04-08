@@ -6,6 +6,12 @@
 //  Copyright © 2015年 tencent. All rights reserved.
 //
 
+
+/**
+ * Warn: NSObjectSafe must used in MRC, otherwise it will cause 
+ * strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+ */
+
 #import <UIKit/UIKit.h>
 
 //! Project version number for NSObjectSafe.

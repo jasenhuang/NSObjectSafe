@@ -16,7 +16,7 @@ NSAssert(condition, @"%@", __VA_ARGS__);
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
     va_list args; va_start(args, fmt);
-    NSLog(@"%s|%s|%d|%@", file, func, line, [[NSString alloc] initWithFormat:fmt arguments:args]);
+    NSLog(@"%s|%s|%d|%@", file, func, line, [[[NSString alloc] initWithFormat:fmt arguments:args] autorelease]);
     va_end(args);
 }
 
@@ -74,6 +74,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         NSObject* obj = [[NSObject alloc] init];
         [obj swizzleInstanceMethod:@selector(addObserver:forKeyPath:options:context:) withMethod:@selector(hookAddObserver:forKeyPath:options:context:)];
         [obj swizzleInstanceMethod:@selector(removeObserver:forKeyPath:) withMethod:@selector(hookRemoveObserver:forKeyPath:)];
+        [obj release];
     });
 }
 - (void) hookAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
@@ -118,6 +119,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* init方法 */
         NSString* obj = [NSString alloc];//NSPlaceholderString
         [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
+        [obj release];
         
         /* 普通方法 */
         obj = [[NSString alloc] init];
@@ -125,6 +127,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
         [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
         [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
+        [obj release];
     });
 }
 + (NSString*) hookStringWithUTF8String:(const char *)nullTerminatedCString
@@ -192,6 +195,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* init方法 */
         NSMutableString* obj = [NSMutableString alloc];//NSPlaceholderMutableString
         [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
+        [obj release];
         
         /* 普通方法 */
         obj = [[NSMutableString alloc] init];
@@ -202,6 +206,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
         [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
         [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
+        [obj release];
     });
 }
 - (nullable instancetype) hookInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
@@ -281,12 +286,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         NSArray* obj = [[NSArray alloc] initWithObjects:@0, nil];
         [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+        [obj release];
         
         /* iOS9 以上，没内容类型是__NSArray0 */
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
             obj = [[NSArray alloc] init];
             [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex0:)];
             [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+            [obj release];
         }
         
     });
@@ -335,6 +342,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(hookReplaceObjectAtIndex:withObject:)];
         [obj swizzleInstanceMethod:@selector(removeObjectsInRange:) withMethod:@selector(hookRemoveObjectsInRange:)];
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+        
+        [obj release];
     });
 }
 - (void) hookAddObject:(id)anObject {
@@ -446,6 +455,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
         [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(hookSetObject:forKey:)];
         [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(hookRemoveObjectForKey:)];
+        [obj release];
     });
 }
 - (id) hookObjectForKey:(id)aKey
@@ -533,6 +543,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* init方法:[NSOrderedSet alloc] 和 [NSMutableOrderedSet alloc] 返回的类是一样   */
         NSOrderedSet* obj = [NSOrderedSet alloc];
         [obj swizzleInstanceMethod:@selector(initWithObject:) withMethod:@selector(hookInitWithObject:)];
+        [obj release];
         
         /* 普通方法 */
         obj = [NSOrderedSet orderedSetWithObjects:@0, nil];
@@ -631,7 +642,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         
         [obj swizzleInstanceMethod:@selector(integerForKey:) withMethod:@selector(hookIntegerForKey:)];
         [obj swizzleInstanceMethod:@selector(boolForKey:) withMethod:@selector(hookBoolForKey:)];
-        
+        [obj release];
     });
 }
 - (id) hookObjectForKey:(NSString *)defaultName

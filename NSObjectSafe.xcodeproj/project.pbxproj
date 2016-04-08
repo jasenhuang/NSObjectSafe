@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		557A51D31C323CD300D5B6B6 /* NSObjectSafe.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 557A51C81C323CD200D5B6B6 /* NSObjectSafe.framework */; };
 		557A51D81C323CD300D5B6B6 /* NSObjectSafeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 557A51D71C323CD300D5B6B6 /* NSObjectSafeTests.m */; };
-		557A51E51C323D6500D5B6B6 /* NSObjectSafe.m in Sources */ = {isa = PBXBuildFile; fileRef = 557A51E31C323D6500D5B6B6 /* NSObjectSafe.m */; };
+		557A51E51C323D6500D5B6B6 /* NSObjectSafe.m in Sources */ = {isa = PBXBuildFile; fileRef = 557A51E31C323D6500D5B6B6 /* NSObjectSafe.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		557A51E71C323D9D00D5B6B6 /* NSObjectSafe.h in Headers */ = {isa = PBXBuildFile; fileRef = 557A51E61C323D9D00D5B6B6 /* NSObjectSafe.h */; };
 /* End PBXBuildFile section */
 
@@ -378,6 +378,7 @@
 				557A51DE1C323CD300D5B6B6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		557A51DF1C323CD300D5B6B6 /* Build configuration list for PBXNativeTarget "NSObjectSafeTests" */ = {
 			isa = XCConfigurationList;
@@ -386,6 +387,7 @@
 				557A51E11C323CD300D5B6B6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
