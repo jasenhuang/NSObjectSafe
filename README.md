@@ -9,7 +9,8 @@
 	
 * involve NSObjectSafe.h/NSObjectSafe.m as build phases
 
-### Warn: NSObjectSafe must used in MRC, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+### Warn: 
+* NSObjectSafe must used in MRC, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
 
 ### Swizzle Functions:
 
