@@ -47,6 +47,11 @@
 //    [mstring substringToIndex:6];
 //    [mstring substringWithRange:NSMakeRange(6, 0)];
     
+    NSCache * cache = [[NSCache alloc] init];
+    
+    [cache setObject:nil forKey:@""];
+    [cache setObject:nil forKey:@"" cost:0];
+    
 }
 
 - (void)testPerformanceExample {

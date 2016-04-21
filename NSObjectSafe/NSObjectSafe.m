@@ -11,7 +11,7 @@
 
 #define SFAssert(condition, ...) \
 if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
-NSAssert(condition, @"%@", __VA_ARGS__);
+//NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
@@ -686,4 +686,35 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 
+@end
+
+#pragma mark - NSCache
+
+@implementation NSCache(Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSCache* obj = [[NSCache alloc] init];
+        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(hookSetObject:forKey:)];
+        [obj swizzleInstanceMethod:@selector(setObject:forKey:cost:) withMethod:@selector(hookSetObject:forKey:cost:)];
+        [obj release];
+    });
+}
+- (void)hookSetObject:(id)obj forKey:(id)key // 0 cost
+{
+    if (obj && key) {
+        [self hookSetObject:obj forKey:key];
+    }else {
+        SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@]", obj, key);
+    }
+}
+- (void)hookSetObject:(id)obj forKey:(id)key cost:(NSUInteger)g
+{
+    if (obj && key) {
+        [self hookSetObject:obj forKey:key cost:g];
+    }else {
+        SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@] cost:[%@]", obj, key, g);
+    }
+}
 @end
