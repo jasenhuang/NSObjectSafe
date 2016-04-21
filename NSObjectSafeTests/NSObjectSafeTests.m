@@ -29,12 +29,12 @@
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
     
-    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, @3, nil];
-    //[array subarrayWithRange:NSMakeRange(1, 3)];
-    //[array removeObjectAtIndex:1];
-    [array addObject:nil];
-    [array removeObjectAtIndex:3];
-    [array removeObjectsInRange:NSMakeRange(3, 2)];
+//    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, @3, nil];
+//    [array subarrayWithRange:NSMakeRange(1, 3)];
+//    [array removeObjectAtIndex:1];
+//    [array addObject:nil];
+//    [array removeObjectAtIndex:3];
+//    [array removeObjectsInRange:NSMakeRange(3, 2)];
     
 //    NSString* string = @"12345";
 //    [string substringFromIndex:6];
@@ -47,11 +47,20 @@
 //    [mstring substringToIndex:6];
 //    [mstring substringWithRange:NSMakeRange(6, 0)];
     
-    NSCache * cache = [[NSCache alloc] init];
+//    NSCache * cache = [[NSCache alloc] init];
+//    
+//    [cache setObject:nil forKey:@""];
+//    [cache setObject:nil forKey:@"" cost:0];
+//    
+//    NSArray* item = nil;
+//    NSArray * iarray = @[@"a",@"b", item ,@"c"];
+//    NSLog(@"%@", iarray);
+//    id a[] = {@"a",@"b", nil ,@"c"};
+//    NSLog(@"%@", [NSMutableArray arrayWithObjects:a count:4]);
     
-    [cache setObject:nil forKey:@""];
-    [cache setObject:nil forKey:@"" cost:0];
-    
+//    NSString* key = nil;
+//    NSString* value = @"d";
+//    NSLog(@"%@", @{@"b":@"c",key:value, @"e":key});
 }
 
 - (void)testPerformanceExample {

@@ -11,7 +11,7 @@
 
 #define SFAssert(condition, ...) \
 if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
-NSAssert(condition, @"%@", __VA_ARGS__);
+//NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
@@ -281,6 +281,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     dispatch_once(&onceToken, ^{
         /* 类方法不用在NSMutableArray里再swizz一次 */
         [NSArray swizzleClassMethod:@selector(arrayWithObject:) withMethod:@selector(hookArrayWithObject:)];
+        [NSArray swizzleClassMethod:@selector(arrayWithObjects:count:) withMethod:@selector(hookArrayWithObjects:count:)];
         
         /* 数组有内容obj类型才是__NSArrayI */
         NSArray* obj = [[NSArray alloc] initWithObjects:@0, nil];
@@ -324,6 +325,17 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self hookSubarrayWithRange:NSMakeRange(range.location, self.count-range.location)];
     }
     return nil;
+}
++ (instancetype)hookArrayWithObjects:(const id [])objects count:(NSUInteger)cnt
+{
+    NSInteger index = 0;
+    id objs[cnt];
+    for (NSInteger i = 0; i < cnt ; ++i) {
+        if (objects[i]) {
+            objs[index++] = objects[i];
+        }
+    }
+    return [self hookArrayWithObjects:objs count:index];
 }
 @end
 
@@ -422,6 +434,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     dispatch_once(&onceToken, ^{
         /* 类方法 */
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(hookDictionaryWithObject:forKey:)];
+        [NSDictionary swizzleClassMethod:@selector(dictionaryWithObjects:forKeys:count:) withMethod:@selector(hookDictionaryWithObjects:forKeys:count:)];
         
         /* 数组有内容obj类型才是__NSDictionaryI，没内容类型是__NSDictionary0 */
         NSDictionary* obj = [NSDictionary dictionaryWithObjectsAndKeys:@0,@0,nil];
@@ -435,6 +448,20 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     SFAssert(NO, @"NSDictionary invalid args hookDictionaryWithObject:[%@] forKey:[%@]", object, key);
     return nil;
+}
++ (instancetype) hookDictionaryWithObjects:(const id [])objects forKeys:(const id [])keys count:(NSUInteger)cnt
+{
+    NSInteger index = 0;
+    id ks[cnt];
+    id objs[cnt];
+    for (NSInteger i = 0; i < cnt ; ++i) {
+        if (keys[i] && objects[i]) {
+            ks[index] = keys[i];
+            objs[index] = objects[i];
+            ++index;
+        }
+    }
+    return [self hookDictionaryWithObjects:objs forKeys:ks count:index];
 }
 - (id) hookObjectForKey:(id)aKey
 {
