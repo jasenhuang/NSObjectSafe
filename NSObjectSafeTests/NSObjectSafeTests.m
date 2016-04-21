@@ -51,16 +51,19 @@
 //    
 //    [cache setObject:nil forKey:@""];
 //    [cache setObject:nil forKey:@"" cost:0];
-//    
-//    NSArray* item = nil;
-//    NSArray * iarray = @[@"a",@"b", item ,@"c"];
-//    NSLog(@"%@", iarray);
+
 //    id a[] = {@"a",@"b", nil ,@"c"};
 //    NSLog(@"%@", [NSMutableArray arrayWithObjects:a count:4]);
     
+//    /* NSArray: Syntactic sugar */
+//    NSArray* item = nil;
+//    NSArray * items = @[@"a",@"b", item ,@"c"];
+//    NSLog(@"%@", items);
+//    
+//    /* NSDictory: Syntactic sugar */
 //    NSString* key = nil;
-//    NSString* value = @"d";
-//    NSLog(@"%@", @{@"b":@"c",key:value, @"e":key});
+//    NSString* value = nil;
+//    NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
 }
 
 - (void)testPerformanceExample {
