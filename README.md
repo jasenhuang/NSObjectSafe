@@ -12,15 +12,13 @@
 ### Warn: 
 * NSObjectSafe must used in MRC, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
 
-### Syntactic Sugar
+### Object Literals
 
 ```
-//NSArray: Syntactic sugar
 NSArray* item = nil;
 NSArray * items = @[@"a",@"b", item ,@"c"];
 NSLog(@"%@", items);
 
-//NSDictory: Syntactic sugar
 NSString* key = nil;
 NSString* value = nil;
 NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
