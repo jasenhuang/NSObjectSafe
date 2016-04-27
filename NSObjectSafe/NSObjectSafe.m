@@ -11,7 +11,7 @@
 
 #define SFAssert(condition, ...) \
 if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
-//NSAssert(condition, @"%@", __VA_ARGS__);
+NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
@@ -459,6 +459,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
             ks[index] = keys[i];
             objs[index] = objects[i];
             ++index;
+        } else {
+            SFAssert(NO, @"NSDictionary invalid args hookDictionaryWithObject:[%@] forKey:[%@]", objects[i], keys[i]);
         }
     }
     return [self hookDictionaryWithObjects:objs forKeys:ks count:index];
