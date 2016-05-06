@@ -366,7 +366,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 - (id) hookObjectAtIndex:(NSUInteger)index {
-    if (index <= self.count) {
+    if (index < self.count) {
         return [self hookObjectAtIndex:index];
     }
     return nil;

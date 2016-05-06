@@ -40,12 +40,11 @@
 //    [string substringFromIndex:6];
 //    [string substringToIndex:6];
 //    [string substringWithRange:NSMakeRange(0, 6)];
-//    
+//
 //    NSMutableString* mstring = [NSMutableString string];
 //    [mstring appendString:@"12345"];
-//    [mstring substringFromIndex:6];
-//    [mstring substringToIndex:6];
-//    [mstring substringWithRange:NSMakeRange(6, 0)];
+//    NSLog(@"%@", [mstring substringToIndex:10]);
+//    NSLog(@"%@", [mstring substringWithRange:NSMakeRange(3, 10)]);
     
 //    NSCache * cache = [[NSCache alloc] init];
 //    
