@@ -1,5 +1,13 @@
 # NSObject-Safe
 
+### Update
+* NSArray , NSDictionary compacity for iOS9 and iOS 10
+* different class cluster with different container element
+```
+0 element       1 element                    > 1 element   
+__NSArray0       __NSSingleArrayI            __NSArrayI
+__NSDictionary0  __NSSingleEntryDictionaryI  __NSDictionaryI
+```
 
 ### Desciption
 * Swizzle commonly used function of Foundation container to prevent nil crash

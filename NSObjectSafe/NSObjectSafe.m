@@ -46,22 +46,30 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 - (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
     Class cls = [self class];
-    
+    /* if current class not exist selector, then get super*/
     Method originalMethod = class_getInstanceMethod(cls, origSelector);
     Method swizzledMethod = class_getInstanceMethod(cls, newSelector);
-    
+    /* add selector if not exist, implement append with method */
     if (class_addMethod(cls,
                         origSelector,
                         method_getImplementation(swizzledMethod),
                         method_getTypeEncoding(swizzledMethod)) ) {
-        /*swizzing super class instance method, added if not exist */
+        /* replace class instance method, added if selector not exist */
+        /* for class cluster , it always add new selector here */
         class_replaceMethod(cls,
                             newSelector,
                             method_getImplementation(originalMethod),
                             method_getTypeEncoding(originalMethod));
         
     } else {
-        method_exchangeImplementations(originalMethod, swizzledMethod);
+        /* swizzleMethod maybe belong to super */
+        class_replaceMethod(cls,
+                            newSelector,
+                            class_replaceMethod(cls,
+                                                origSelector,
+                                                method_getImplementation(swizzledMethod),
+                                                method_getTypeEncoding(swizzledMethod)),
+                            method_getTypeEncoding(originalMethod));
     }
 }
 @end
@@ -284,10 +292,18 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [NSArray swizzleClassMethod:@selector(arrayWithObjects:count:) withMethod:@selector(hookArrayWithObjects:count:)];
         
         /* 数组有内容obj类型才是__NSArrayI */
-        NSArray* obj = [[NSArray alloc] initWithObjects:@0, nil];
+        NSArray* obj = [[NSArray alloc] initWithObjects:@0, @1, nil];
         [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
         [obj release];
+        
+        /* iOS10 以上，单个内容类型是__NSArraySingleObjectI */
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
+            obj = [[NSArray alloc] initWithObjects:@0, nil];
+            [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
+            [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+            [obj release];
+        }
         
         /* iOS9 以上，没内容类型是__NSArray0 */
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
@@ -311,6 +327,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 - (id) hookObjectAtIndex0:(NSUInteger)index {
     return nil;
 }
+
 - (id) hookObjectAtIndex:(NSUInteger)index {
     if (index < self.count) {
         return [self hookObjectAtIndex:index];
@@ -436,9 +453,23 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(hookDictionaryWithObject:forKey:)];
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObjects:forKeys:count:) withMethod:@selector(hookDictionaryWithObjects:forKeys:count:)];
         
-        /* 数组有内容obj类型才是__NSDictionaryI，没内容类型是__NSDictionary0 */
-        NSDictionary* obj = [NSDictionary dictionaryWithObjectsAndKeys:@0,@0,nil];
+        /* 数组有内容obj类型才是__NSDictionaryI */
+        NSDictionary* obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, @0, @0, nil];
         [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+        [obj release];
+        
+        /* iOS10 以上，单个内容类型是__NSArraySingleEntryDictionaryI */
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
+            obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, nil];
+            [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+        }
+        
+        /* iOS9 以上，没内容类型是__NSDictionary0 */
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
+            obj = [[NSDictionary alloc] init];
+            [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+            [obj release];
+        }
     });
 }
 + (instancetype) hookDictionaryWithObject:(id)object forKey:(id)key

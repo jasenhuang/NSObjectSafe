@@ -29,12 +29,24 @@
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
     
-//    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, @3, nil];
-//    [array subarrayWithRange:NSMakeRange(1, 3)];
-//    [array removeObjectAtIndex:1];
-//    [array addObject:nil];
-//    [array removeObjectAtIndex:3];
-//    [array removeObjectsInRange:NSMakeRange(3, 2)];
+    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
+    [array objectAtIndex:4];
+    [array subarrayWithRange:NSMakeRange(2, 2)];
+    
+    array = [NSArray arrayWithObjects:@1, nil];//__NSSingleObjectArrayI
+    [array objectAtIndex:4];
+    
+    array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+    [array objectAtIndex:4];
+    
+    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:nil];//__NSDictionary0
+    [dict objectForKey:nil];
+    
+    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1", nil];//__NSSingleEntryDictionaryI
+    [dict objectForKey:nil];
+    
+    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
+    [dict objectForKey:nil];
     
 //    NSString* string = @"12345";
 //    [string substringFromIndex:6];
