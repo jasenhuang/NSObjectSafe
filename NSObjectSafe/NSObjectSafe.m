@@ -462,6 +462,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
             obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, nil];
             [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
+            [obj release];
         }
         
         /* iOS9 以上，没内容类型是__NSDictionary0 */
