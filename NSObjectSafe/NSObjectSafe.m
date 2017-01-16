@@ -774,7 +774,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     if (obj && key) {
         [self hookSetObject:obj forKey:key cost:g];
     }else {
-        SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@] cost:[%@]", obj, key, g);
+        SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@] cost:[%@]", obj, key, @(g));
     }
 }
 @end
