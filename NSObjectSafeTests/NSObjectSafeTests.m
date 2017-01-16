@@ -39,6 +39,9 @@
     array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
     [array objectAtIndex:4];
     
+    NSArray* item = nil;
+    NSArray * items = @[@"a",@"b", item ,@"c"];
+    
     NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:nil];//__NSDictionary0
     [dict objectForKey:nil];
     
@@ -47,6 +50,14 @@
     
     dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
     [dict objectForKey:nil];
+    
+    for (NSInteger i = 0; i < 1000; ++i) {
+        NSMutableDictionary* mdict = [[NSMutableDictionary alloc] initWithCapacity:3];
+        [mdict setObject:@1 forKey:@1];
+        [mdict setObject:nil forKey:@1];
+        [mdict setObject:@1 forKey:@1];
+        [NSMutableArray arrayWithArray:[mdict allValues]];
+    }
     
 //    NSString* string = @"12345";
 //    [string substringFromIndex:6];
