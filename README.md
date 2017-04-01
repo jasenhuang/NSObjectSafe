@@ -18,7 +18,7 @@ __NSDictionary0  __NSSingleEntryDictionaryI  __NSDictionaryI
 * involve NSObjectSafe.h/NSObjectSafe.m as build phases
 
 ### Warn: 
-* NSObjectSafe must used in MRC, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+* Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
 
 ### Object Literals
 
