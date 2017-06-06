@@ -348,7 +348,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     return nil;
 }
-- (id)hookInitWithString:(NSString*)str attributes:(nullable NSDictionary<NSAttributedStringKey, id> *)attributes{
+- (id)hookInitWithString:(NSString*)str attributes:(nullable NSDictionary*)attributes{
     if (str){
         return [self hookInitWithString:str attributes:attributes];
     }
