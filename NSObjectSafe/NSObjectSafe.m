@@ -9,8 +9,11 @@
 #import "NSObjectSafe.h"
 #import <objc/runtime.h>
 
+void (^safeAssertCallback)(const char *, int, NSString *, ...);
+
 #define SFAssert(condition, ...) \
-if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
+if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); \
+if (safeAssertCallback) safeAssertCallback(__FUNCTION__, __LINE__, __VA_ARGS__);} \
 NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
@@ -72,6 +75,11 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
                             method_getTypeEncoding(originalMethod));
     }
 }
+
++ (void)setSafeAssertCallback:(void (^)(const char *, int, NSString *, ...))callback {
+    safeAssertCallback = [callback copy];
+}
+
 @end
 
 @implementation NSObject(Safe)
@@ -281,6 +289,81 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 @end
 
+#pragma mark - NSAttributedString
+@implementation NSAttributedString (Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        
+        /* init方法 */
+        NSAttributedString* obj = [NSAttributedString alloc];
+        [obj swizzleInstanceMethod:@selector(initWithString:) withMethod:@selector(hookInitWithString:)];
+        [obj release];
+        
+        /* 普通方法 */
+        obj = [[NSAttributedString alloc] init];
+        [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj release];
+    });
+}
+- (id)hookInitWithString:(NSString*)str {
+    if (str){
+        return [self hookInitWithString:str];
+    }
+    return nil;
+}
+- (NSAttributedString *)hookAttributedSubstringFromRange:(NSRange)range {
+    if (range.location + range.length <= self.length) {
+        return [self hookAttributedSubstringFromRange:range];
+    }else if (range.location < self.length){
+        return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+    return nil;
+}
+@end
+
+#pragma mark - NSMutableAttributedString
+@implementation NSMutableAttributedString (Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        
+        /* init方法 */
+        NSMutableAttributedString* obj = [NSMutableAttributedString alloc];
+        [obj swizzleInstanceMethod:@selector(initWithString:) withMethod:@selector(hookInitWithString:)];
+        [obj swizzleInstanceMethod:@selector(initWithString:attributes:) withMethod:@selector(hookInitWithString:attributes:)];
+        [obj release];
+        
+        /* 普通方法 */
+        obj = [[NSMutableAttributedString alloc] init];
+        [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj release];
+    });
+}
+- (id)hookInitWithString:(NSString*)str {
+    if (str){
+        return [self hookInitWithString:str];
+    }
+    return nil;
+}
+- (id)hookInitWithString:(NSString*)str attributes:(nullable NSDictionary<NSAttributedStringKey, id> *)attributes{
+    if (str){
+        return [self hookInitWithString:str attributes:attributes];
+    }
+    return nil;
+}
+- (NSAttributedString *)hookAttributedSubstringFromRange:(NSRange)range {
+    if (range.location + range.length <= self.length) {
+        return [self hookAttributedSubstringFromRange:range];
+    }else if (range.location < self.length){
+        return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+    return nil;
+}
+@end
+
 #pragma mark - NSArray
 @implementation NSArray (Safe)
 + (void)load
@@ -295,6 +378,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         NSArray* obj = [[NSArray alloc] initWithObjects:@0, @1, nil];
         [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
         [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
         [obj release];
         
         /* iOS10 以上，单个内容类型是__NSArraySingleObjectI */
@@ -302,6 +386,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
             obj = [[NSArray alloc] initWithObjects:@0, nil];
             [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
             [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
             [obj release];
         }
         
@@ -310,6 +395,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
             obj = [[NSArray alloc] init];
             [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex0:)];
             [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
             [obj release];
         }
         
@@ -325,13 +411,21 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 /* __NSArray0 没有元素，也不可以变 */
 - (id) hookObjectAtIndex0:(NSUInteger)index {
+    SFAssert(NO, @"NSArray invalid index:[%@]", @(index));
     return nil;
 }
-
 - (id) hookObjectAtIndex:(NSUInteger)index {
     if (index < self.count) {
         return [self hookObjectAtIndex:index];
     }
+    SFAssert(NO, @"NSArray invalid index:[%@]", @(index));
+    return nil;
+}
+- (id) hookObjectAtIndexedSubscript:(NSInteger)index {
+    if (index < self.count) {
+        return [self hookObjectAtIndexedSubscript:index];
+    }
+    SFAssert(NO, @"NSArray invalid index:[%@]", @(index));
     return nil;
 }
 - (NSArray *)hookSubarrayWithRange:(NSRange)range
@@ -364,6 +458,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         NSMutableArray* obj = [[NSMutableArray alloc] init];
         //对象方法 __NSArrayM 和 __NSArrayI 都有实现，都要swizz
         [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
+        [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
         
         [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(hookAddObject:)];
         [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(hookInsertObject:atIndex:)];
@@ -386,6 +481,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     if (index < self.count) {
         return [self hookObjectAtIndex:index];
     }
+    SFAssert(NO, @"NSArray invalid index:[%@]", @(index));
+    return nil;
+}
+- (id) hookObjectAtIndexedSubscript:(NSInteger)index {
+    if (index < self.count) {
+        return [self hookObjectAtIndexedSubscript:index];
+    }
+    SFAssert(NO, @"NSArray invalid index:[%@]", @(index));
     return nil;
 }
 - (void) hookInsertObject:(id)anObject atIndex:(NSUInteger)index {
@@ -779,3 +882,5 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 @end
+
+

@@ -29,36 +29,43 @@
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
     
-    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
-    [array objectAtIndex:4];
-    [array subarrayWithRange:NSMakeRange(2, 2)];
+//    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
+//    NSLog(@"%@", array[1]);
+//    [array objectAtIndex:4];
+//    [array subarrayWithRange:NSMakeRange(2, 2)];
+//    
+//    array = [NSArray arrayWithObjects:@1, nil];//__NSSingleObjectArrayI
+//    NSLog(@"%@", array[2]);
+//    [array objectAtIndex:4];
+//    
+//    array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    NSLog(@"%@", array[3]);
+//    [array objectAtIndex:4];
+//
+//    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    NSLog(@"%@", array[3]);
+//    [array removeObjectAtIndex:3];
     
-    array = [NSArray arrayWithObjects:@1, nil];//__NSSingleObjectArrayI
-    [array objectAtIndex:4];
-    
-    array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
-    [array objectAtIndex:4];
-    
-    NSArray* item = nil;
-    NSArray * items = @[@"a",@"b", item ,@"c"];
-    
-    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:nil];//__NSDictionary0
-    [dict objectForKey:nil];
-    
-    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1", nil];//__NSSingleEntryDictionaryI
-    [dict objectForKey:nil];
-    
-    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
-    [dict objectForKey:nil];
-    
-    for (NSInteger i = 0; i < 1000; ++i) {
-        NSMutableDictionary* mdict = [[NSMutableDictionary alloc] initWithCapacity:3];
-        [mdict setObject:@1 forKey:@1];
-        [mdict setObject:nil forKey:@1];
-        [mdict setObject:@1 forKey:@1];
-        [NSMutableArray arrayWithArray:[mdict allValues]];
-    }
-    
+//    NSArray* item = nil;
+//    NSArray * items = @[@"a",@"b", item ,@"c"];
+//    
+//    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:nil];//__NSDictionary0
+//    [dict objectForKey:nil];
+//    
+//    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1", nil];//__NSSingleEntryDictionaryI
+//    [dict objectForKey:nil];
+//    
+//    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
+//    [dict objectForKey:nil];
+//    
+//    for (NSInteger i = 0; i < 1000; ++i) {
+//        NSMutableDictionary* mdict = [[NSMutableDictionary alloc] initWithCapacity:3];
+//        [mdict setObject:@1 forKey:@1];
+//        [mdict setObject:nil forKey:@1];
+//        [mdict setObject:@1 forKey:@1];
+//        [NSMutableArray arrayWithArray:[mdict allValues]];
+//    }
+//    
 //    NSString* string = @"12345";
 //    [string substringFromIndex:6];
 //    [string substringToIndex:6];
@@ -86,6 +93,13 @@
 //    NSString* key = nil;
 //    NSString* value = nil;
 //    NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
+    
+    NSAttributedString* attr = [[NSAttributedString alloc] initWithString:nil attributes:nil];
+    attr = [[NSAttributedString alloc] initWithString:@"hello"];
+    NSLog(@"%@", [attr attributedSubstringFromRange:NSMakeRange(1, 10)]);
+    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
+    attr = [[NSMutableAttributedString alloc] initWithString:@""];
+    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
 }
 
 - (void)testPerformanceExample {
