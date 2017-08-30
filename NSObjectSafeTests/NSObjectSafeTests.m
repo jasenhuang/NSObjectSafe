@@ -8,6 +8,20 @@
 
 #import <XCTest/XCTest.h>
 #import "NSObjectSafe.h"
+#import <objc/runtime.h>
+
+@interface Base : NSObject
+@end
+@implementation Base
+
+@end
+
+@interface A : Base
+- (void)print:(NSString*)msg;
+@end
+@implementation A
+@end
+
 
 @interface NSObjectSafeTests : XCTestCase
 
@@ -28,7 +42,11 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
-    
+    A* a = [A new];
+    [a print:@"hello"];
+    NSArray* array = @"hello";
+    NSString* item = [array objectAtIndex:1];
+    NSLog(@"%@", item);
 //    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
 //    NSLog(@"%@", array[1]);
 //    [array objectAtIndex:4];
@@ -42,7 +60,9 @@
 //    NSLog(@"%@", array[3]);
 //    [array objectAtIndex:4];
 //
-//    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+    //NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    NSMutableArray* array = [NSMutableArray array];//__NSArrayI
+//    [array insertObject:@3 atIndex:3];
 //    NSLog(@"%@", array[3]);
 //    [array removeObjectAtIndex:3];
     
@@ -94,12 +114,21 @@
 //    NSString* value = nil;
 //    NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
     
-    NSAttributedString* attr = [[NSAttributedString alloc] initWithString:nil attributes:nil];
-    attr = [[NSAttributedString alloc] initWithString:@"hello"];
-    NSLog(@"%@", [attr attributedSubstringFromRange:NSMakeRange(1, 10)]);
-    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
-    attr = [[NSMutableAttributedString alloc] initWithString:@""];
-    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
+//    NSAttributedString* attr = [[NSAttributedString alloc] initWithString:nil attributes:nil];
+//    attr = [[NSAttributedString alloc] initWithString:@"hello"];
+//    NSLog(@"%@", [attr attributedSubstringFromRange:NSMakeRange(1, 10)]);
+//    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
+//    attr = [[NSMutableAttributedString alloc] initWithString:@""];
+//    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
+    
+//    NSString* cls = @"UIWebBrowserView";
+//    if (!strncmp(cls.UTF8String, "UIWebBro", 8) && !strncmp(cls.UTF8String + 8, "wserView", 8)){
+//        NSLog(@"asdfas");
+//    }
+//    char buf[17];
+//    snprintf(buf, 17, "%s%s", "UIWebBro", "wserView");
+//    char buf[35];
+//    snprintf(buf, 35, "%s%s%s%s", "UIWebBro", "wserView", "MinusAcc", "essoryView");
 }
 
 - (void)testPerformanceExample {
@@ -108,5 +137,27 @@
         // Put the code you want to measure the time of here.
     }];
 }
-
+/*
+ NSString* className = NSStringFromClass(cls);
+ const char *subclassName = [className stringByAppendingString:NSSafeSubclassSuffix].UTF8String;
+ Class subclass = objc_getClass(subclassName);
+ if (subclass == nil) {
+ subclass = objc_allocateClassPair(c, subclassName, 0);
+ if (subclass) {
+ class_addMethod(subclass, @selector(methodSignatureForSelector:), imp_implementationWithBlock(^NSMethodSignature*(SEL selector){
+ return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
+ }), "@@::");
+ class_addMethod(subclass, @selector(forwardInvocation:), imp_implementationWithBlock(^(NSInvocation* invocation){
+ NSString* info = [NSString stringWithFormat:@"unrecognized selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(c)];
+ [invocation setSelector:@selector(dealException:)];
+ [invocation setArgument:&info atIndex:2];
+ [invocation invokeWithTarget:[NSSafeProxy new]];
+ }), "v@:@");
+ objc_registerClassPair(subclass);
+ 
+ }else {
+ SFAssert(0, @"objc_allocateClassPair failed to allocate class %s.", subclassName);
+ 
+ }
+ }*/
 @end

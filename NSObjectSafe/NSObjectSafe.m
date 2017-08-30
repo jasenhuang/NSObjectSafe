@@ -8,6 +8,9 @@
 
 #import "NSObjectSafe.h"
 #import <objc/runtime.h>
+#import <objc/message.h>
+
+NSString *const NSSafeSuffix = @"_NSSafe_";
 
 void (^safeAssertCallback)(const char *, int, NSString *, ...);
 
@@ -22,6 +25,15 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     NSLog(@"%s|%s|%d|%@", file, func, line, [[[NSString alloc] initWithFormat:fmt arguments:args] autorelease]);
     va_end(args);
 }
+@interface NSSafeProxy : NSObject
+
+@end
+@implementation NSSafeProxy
+- (void)dealException:(NSString*)info
+{
+    NSLog(@"NSSafeProxy: %@", info);
+}
+@end
 
 @implementation NSObject(Swizzle)
 + (void)swizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
@@ -90,6 +102,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         NSObject* obj = [[NSObject alloc] init];
         [obj swizzleInstanceMethod:@selector(addObserver:forKeyPath:options:context:) withMethod:@selector(hookAddObserver:forKeyPath:options:context:)];
         [obj swizzleInstanceMethod:@selector(removeObserver:forKeyPath:) withMethod:@selector(hookRemoveObserver:forKeyPath:)];
+        [obj swizzleInstanceMethod:@selector(methodSignatureForSelector:) withMethod:@selector(hookMethodSignatureForSelector:)];
+        [obj swizzleInstanceMethod:@selector(forwardInvocation:) withMethod:@selector(hookForwardInvocation:)];
         [obj release];
     });
 }
@@ -118,6 +132,35 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     @catch (NSException *exception) {
         NSLog(@"hookRemoveObserver ex: %@", [exception callStackSymbols]);
     }
+}
+
+- (NSMethodSignature*)hookMethodSignatureForSelector:(SEL)aSelector {
+    /* 如果 当前类有methodSignatureForSelector实现，NSObject的实现直接返回nil
+     * 子类实现如下：
+     *          NSMethodSignature* sig = [super methodSignatureForSelector:aSelector];
+     *          if (!sig) {
+     *              //当前类的methodSignatureForSelector实现
+     *              //如果当前类的methodSignatureForSelector也返回nil
+     *          }
+     *          return sig;
+     */
+    NSMethodSignature* sig = [self hookMethodSignatureForSelector:aSelector];
+    if (!sig){
+        if (class_getMethodImplementation([NSObject class], @selector(methodSignatureForSelector:))
+            != class_getMethodImplementation(self.class, @selector(methodSignatureForSelector:)) ){
+            return nil;
+        }
+        return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
+    }
+    return sig;
+}
+
+- (void)hookForwardInvocation:(NSInvocation*)invocation
+{
+    NSString* info = [NSString stringWithFormat:@"unrecognized selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(self.class)];
+    [invocation setSelector:@selector(dealException:)];
+    [invocation setArgument:&info atIndex:2];
+    [invocation invokeWithTarget:[NSSafeProxy new]];
 }
 
 @end
