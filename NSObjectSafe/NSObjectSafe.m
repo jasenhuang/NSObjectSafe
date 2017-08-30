@@ -383,6 +383,13 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 普通方法 */
         obj = [[NSMutableAttributedString alloc] init];
         [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj swizzleInstanceMethod:@selector(addAttribute:value:range:) withMethod:@selector(hookAddAttribute:value:range:)];
+        [obj swizzleInstanceMethod:@selector(addAttributes:range:) withMethod:@selector(hookAddAttributes:range:)];
+        [obj swizzleInstanceMethod:@selector(setAttributes:range:) withMethod:@selector(hookSetAttributes:range:)];
+        [obj swizzleInstanceMethod:@selector(removeAttribute:range:) withMethod:@selector(hookRemoveAttribute:range:)];
+        [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(hookDeleteCharactersInRange:)];
+        [obj swizzleInstanceMethod:@selector(replaceCharactersInRange:withString:) withMethod:@selector(hookReplaceCharactersInRange:withString:)];
+        [obj swizzleInstanceMethod:@selector(replaceCharactersInRange:withAttributedString:) withMethod:@selector(hookReplaceCharactersInRange:withAttributedString:)];
         [obj release];
     });
 }
@@ -405,6 +412,89 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
     }
     return nil;
+}
+- (void)hookAddAttribute:(id)name value:(id)value range:(NSRange)range {
+    if (!range.length) {
+        [self hookAddAttribute:name value:value range:range];
+    }else if (value){
+        if (range.location + range.length <= self.length) {
+            [self hookAddAttribute:name value:value range:range];
+        }else if (range.location < self.length){
+            [self hookAddAttribute:name value:value range:NSMakeRange(range.location, self.length-range.location)];
+        }
+    }else {
+        SFAssert(NO, @"hookAddAttribute:value:range: value is nil");
+    }
+}
+- (void)hookAddAttributes:(NSDictionary<NSString *,id> *)attrs range:(NSRange)range {
+    if (!range.length) {
+        [self hookAddAttributes:attrs range:range];
+    }else if (attrs){
+        if (range.location + range.length <= self.length) {
+            [self hookAddAttributes:attrs range:range];
+        }else if (range.location < self.length){
+            [self hookAddAttributes:attrs range:NSMakeRange(range.location, self.length-range.location)];
+        }
+    }else{
+        SFAssert(NO, @"hookAddAttributes:range: attrs is nil");
+    }
+}
+- (void)hookSetAttributes:(NSDictionary<NSString *,id> *)attrs range:(NSRange)range {
+    if (!range.length) {
+        [self hookSetAttributes:attrs range:range];
+    }else if (attrs){
+        if (range.location + range.length <= self.length) {
+            [self hookSetAttributes:attrs range:range];
+        }else if (range.location < self.length){
+            [self hookSetAttributes:attrs range:NSMakeRange(range.location, self.length-range.location)];
+        }
+    }else{
+        SFAssert(NO, @"hookSetAttributes:range:  attrs is nil");
+    }
+    
+}
+- (void)hookRemoveAttribute:(id)name range:(NSRange)range {
+    if (!range.length) {
+        [self hookRemoveAttribute:name range:range];
+    }else if (name){
+        if (range.location + range.length <= self.length) {
+            [self hookRemoveAttribute:name range:range];
+        }else if (range.location < self.length) {
+            [self hookRemoveAttribute:name range:NSMakeRange(range.location, self.length-range.location)];
+        }
+    }else{
+        SFAssert(NO, @"hookRemoveAttribute:range:  name is nil");
+    }
+    
+}
+- (void)hookDeleteCharactersInRange:(NSRange)range {
+    if (range.location + range.length <= self.length) {
+        [self hookDeleteCharactersInRange:range];
+    }else if (range.location < self.length) {
+        [self hookDeleteCharactersInRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+}
+- (void)hookReplaceCharactersInRange:(NSRange)range withString:(NSString *)str {
+    if (str){
+        if (range.location + range.length <= self.length) {
+            [self hookReplaceCharactersInRange:range withString:str];
+        }else if (range.location < self.length) {
+            [self hookReplaceCharactersInRange:NSMakeRange(range.location, self.length-range.location) withString:str];
+        }
+    }else{
+        SFAssert(NO, @"hookReplaceCharactersInRange:withString:  str is nil");
+    }
+}
+- (void)hookReplaceCharactersInRange:(NSRange)range withAttributedString:(NSString *)str {
+    if (str){
+        if (range.location + range.length <= self.length) {
+            [self hookReplaceCharactersInRange:range withAttributedString:str];
+        }else if (range.location < self.length) {
+            [self hookReplaceCharactersInRange:NSMakeRange(range.location, self.length-range.location) withAttributedString:str];
+        }
+    }else{
+        SFAssert(NO, @"hookReplaceCharactersInRange:withString:  str is nil");
+    }
 }
 @end
 

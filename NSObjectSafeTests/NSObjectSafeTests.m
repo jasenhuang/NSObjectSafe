@@ -42,11 +42,12 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
-    A* a = [A new];
-    [a print:@"hello"];
-    NSArray* array = @"hello";
-    NSString* item = [array objectAtIndex:1];
-    NSLog(@"%@", item);
+//    A* a = [A new];
+//    [a print:@"hello"];
+//    NSArray* array = @"hello";
+//    NSString* item = [array objectAtIndex:1];
+//    NSLog(@"%@", item);
+
 //    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
 //    NSLog(@"%@", array[1]);
 //    [array objectAtIndex:4];
@@ -120,6 +121,20 @@
 //    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
 //    attr = [[NSMutableAttributedString alloc] initWithString:@""];
 //    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
+    
+    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:@"hello" attributes:nil];
+//    [attr attributedSubstringFromRange:NSMakeRange(1000, 1)];
+    
+//    [attr addAttribute:@"a" value:nil range:NSMakeRange(100, 0)];
+//    [attr addAttributes:@{@"c":@"d"} range:NSMakeRange(1000, 0)];
+//    [attr removeAttribute:@"a" range:NSMakeRange(1000, 0)];
+//    [attr setAttributes:nil range:NSMakeRange(100, 0)];
+    
+    [attr replaceCharactersInRange:NSMakeRange(10, 1) withString:@"a"];
+//    [attr replaceCharactersInRange:NSMakeRange(10, 1) withAttributedString:@"a"];
+    
+//    [attr deleteCharactersInRange:NSMakeRange(10000, 1)];
+    NSLog(@"%@", attr);
     
 //    NSString* cls = @"UIWebBrowserView";
 //    if (!strncmp(cls.UTF8String, "UIWebBro", 8) && !strncmp(cls.UTF8String + 8, "wserView", 8)){
