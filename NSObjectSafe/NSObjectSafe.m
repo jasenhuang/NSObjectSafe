@@ -31,7 +31,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 @implementation NSSafeProxy
 - (void)dealException:(NSString*)info
 {
-    NSLog(@"NSSafeProxy: %@", info);
+    NSString* msg = [NSString stringWithFormat:@"NSSafeProxy: %@", info];
+    SFAssert(0, msg);
 }
 @end
 

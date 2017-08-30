@@ -1,5 +1,14 @@
 # NSObject-Safe
 
+### unrecognized selector protection
+* NSSafeProxy: unrecognized selector [print:] sent to A
+```
+@interface A : NSObject
+- (void)print:(NSString*)msg;
+@end
+@implementation A
+@end
+```
 ### Update
 * NSArray , NSDictionary compacity for iOS9 and iOS 10
 * different class cluster with different container element
