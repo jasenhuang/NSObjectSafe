@@ -11,6 +11,7 @@
 #import <objc/message.h>
 
 NSString *const NSSafeSuffix = @"_NSSafe_";
+NSString *const NSSafeNotification = @"_NSSafeNotification_";
 
 void (^safeAssertCallback)(const char *, int, NSString *, ...);
 
@@ -159,9 +160,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 - (void)hookForwardInvocation:(NSInvocation*)invocation
 {
     NSString* info = [NSString stringWithFormat:@"unrecognized selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(self.class)];
-    [invocation setSelector:@selector(dealException:)];
-    [invocation setArgument:&info atIndex:2];
-    [invocation invokeWithTarget:[NSSafeProxy new]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:NSSafeNotification object:self userInfo:@{@"invocation":invocation}];
+    [[NSSafeProxy new] dealException:info];
 }
 
 @end
@@ -187,6 +187,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
         [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
         [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
+        [obj swizzleInstanceMethod:@selector(rangeOfString:options:range:locale:) withMethod:@selector(hookRangeOfString:options:range:locale:)];
         [obj release];
     });
 }
@@ -243,6 +244,20 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self hookSubstringWithRange:NSMakeRange(range.location, self.length-range.location)];
     }
     return nil;
+}
+- (NSRange)hookRangeOfString:(NSString *)searchString options:(NSStringCompareOptions)mask range:(NSRange)range locale:(nullable NSLocale *)locale
+{
+    if (searchString){
+        if (range.location + range.length <= self.length) {
+            return [self hookRangeOfString:searchString options:mask range:range locale:locale];
+        }else if (range.location < self.length){
+            return [self hookRangeOfString:searchString options:mask range:NSMakeRange(range.location, self.length-range.location) locale:locale];
+        }
+        return NSMakeRange(NSNotFound, 0);
+    }else{
+        SFAssert(NO, @"hookRangeOfString:options:range:locale: searchString is nil");
+        return NSMakeRange(NSNotFound, 0);
+    }
 }
 @end
 
@@ -348,6 +363,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 普通方法 */
         obj = [[NSAttributedString alloc] init];
         [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj swizzleInstanceMethod:@selector(enumerateAttribute:inRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttribute:inRange:options:usingBlock:)];
+        [obj swizzleInstanceMethod:@selector(enumerateAttributesInRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttributesInRange:options:usingBlock:)];
         [obj release];
     });
 }
@@ -364,6 +381,22 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
     }
     return nil;
+}
+- (void)hookEnumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
+{
+    if (range.location + range.length <= self.length) {
+        [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
+    }else if (range.location < self.length){
+        [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
+    }
+}
+- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
+{
+    if (range.location + range.length <= self.length) {
+        [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
+    }else if (range.location < self.length){
+        [self hookEnumerateAttributesInRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
+    }
 }
 @end
 
@@ -390,6 +423,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(hookDeleteCharactersInRange:)];
         [obj swizzleInstanceMethod:@selector(replaceCharactersInRange:withString:) withMethod:@selector(hookReplaceCharactersInRange:withString:)];
         [obj swizzleInstanceMethod:@selector(replaceCharactersInRange:withAttributedString:) withMethod:@selector(hookReplaceCharactersInRange:withAttributedString:)];
+        [obj swizzleInstanceMethod:@selector(enumerateAttribute:inRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttribute:inRange:options:usingBlock:)];
+        [obj swizzleInstanceMethod:@selector(enumerateAttributesInRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttributesInRange:options:usingBlock:)];
         [obj release];
     });
 }
@@ -494,6 +529,22 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         }
     }else{
         SFAssert(NO, @"hookReplaceCharactersInRange:withString:  str is nil");
+    }
+}
+- (void)hookEnumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
+{
+    if (range.location + range.length <= self.length) {
+        [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
+    }else if (range.location < self.length){
+        [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
+    }
+}
+- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
+{
+    if (range.location + range.length <= self.length) {
+        [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
+    }else if (range.location < self.length){
+        [self hookEnumerateAttributesInRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
     }
 }
 @end

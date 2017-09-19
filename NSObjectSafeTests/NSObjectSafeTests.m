@@ -61,7 +61,10 @@
 //    NSLog(@"%@", array[3]);
 //    [array objectAtIndex:4];
 //
-    //NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    NSMutableArray* array = [NSMutableArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    for (NSNumber* i in array) {
+//        [array addObject:@3];
+//    }
 //    NSMutableArray* array = [NSMutableArray array];//__NSArrayI
 //    [array insertObject:@3 atIndex:3];
 //    NSLog(@"%@", array[3]);
@@ -69,7 +72,7 @@
     
 //    NSArray* item = nil;
 //    NSArray * items = @[@"a",@"b", item ,@"c"];
-//    
+//
 //    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:nil];//__NSDictionary0
 //    [dict objectForKey:nil];
 //    
@@ -115,6 +118,9 @@
 //    NSString* value = nil;
 //    NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
     
+    NSMutableString* a = @"hello";
+    [a rangeOfString:nil];
+    
 //    NSAttributedString* attr = [[NSAttributedString alloc] initWithString:nil attributes:nil];
 //    attr = [[NSAttributedString alloc] initWithString:@"hello"];
 //    NSLog(@"%@", [attr attributedSubstringFromRange:NSMakeRange(1, 10)]);
@@ -122,19 +128,26 @@
 //    attr = [[NSMutableAttributedString alloc] initWithString:@""];
 //    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
     
-    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:@"hello" attributes:nil];
+//    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:@"hello" attributes:nil];
+//    [attr enumerateAttribute:nil inRange:NSMakeRange(0, 20) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+//
+//    }];
+//    [attr enumerateAttributesInRange:NSMakeRange(0, 20) options:0 usingBlock:^(NSDictionary<NSAttributedStringKey,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
+//
+//    }];
+    
 //    [attr attributedSubstringFromRange:NSMakeRange(1000, 1)];
     
 //    [attr addAttribute:@"a" value:nil range:NSMakeRange(100, 0)];
 //    [attr addAttributes:@{@"c":@"d"} range:NSMakeRange(1000, 0)];
-//    [attr removeAttribute:@"a" range:NSMakeRange(1000, 0)];
+//    [attr removeAttribute:@"a" range:NSMakeRange(1000, 10)];
 //    [attr setAttributes:nil range:NSMakeRange(100, 0)];
     
-    [attr replaceCharactersInRange:NSMakeRange(10, 1) withString:@"a"];
+//    [attr replaceCharactersInRange:NSMakeRange(10, 1) withString:@"a"];
 //    [attr replaceCharactersInRange:NSMakeRange(10, 1) withAttributedString:@"a"];
     
 //    [attr deleteCharactersInRange:NSMakeRange(10000, 1)];
-    NSLog(@"%@", attr);
+//    NSLog(@"%@", attr);
     
 //    NSString* cls = @"UIWebBrowserView";
 //    if (!strncmp(cls.UTF8String, "UIWebBro", 8) && !strncmp(cls.UTF8String + 8, "wserView", 8)){
