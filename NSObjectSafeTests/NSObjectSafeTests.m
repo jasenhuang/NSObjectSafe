@@ -132,7 +132,7 @@
 //    [attr enumerateAttribute:nil inRange:NSMakeRange(0, 20) options:0 usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
 //
 //    }];
-//    [attr enumerateAttributesInRange:NSMakeRange(0, 20) options:0 usingBlock:^(NSDictionary<NSAttributedStringKey,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
+//    [attr enumerateAttributesInRange:NSMakeRange(0, 20) options:0 usingBlock:^(NSDictionary<NSString*,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
 //
 //    }];
     

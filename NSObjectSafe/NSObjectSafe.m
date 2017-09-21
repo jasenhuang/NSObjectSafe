@@ -382,7 +382,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     return nil;
 }
-- (void)hookEnumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
+- (void)hookEnumerateAttribute:(NSString*)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
 {
     if (range.location + range.length <= self.length) {
         [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
@@ -390,7 +390,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
     }
 }
-- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
+- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSString*,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
 {
     if (range.location + range.length <= self.length) {
         [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
@@ -531,7 +531,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         SFAssert(NO, @"hookReplaceCharactersInRange:withString:  str is nil");
     }
 }
-- (void)hookEnumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
+- (void)hookEnumerateAttribute:(NSString*)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
 {
     if (range.location + range.length <= self.length) {
         [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
@@ -539,7 +539,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
     }
 }
-- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
+- (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSString*,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
 {
     if (range.location + range.length <= self.length) {
         [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
