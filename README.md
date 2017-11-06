@@ -1,14 +1,17 @@
 # NSObject-Safe
 
-### unrecognized selector protection
-* NSSafeProxy: unrecognized selector [print:] sent to A
-```
-@interface A : NSObject
-- (void)print:(NSString*)msg;
-@end
-@implementation A
-@end
-```
+### Desciption
+* Swizzle commonly used function of Foundation container to prevent nil crash
+* Hook forwardInvocation to catch unrecognized selector exception
+* Assert in Debug and log in Release
+
+### Usage:
+	
+* involve NSObjectSafe.h/NSObjectSafe.m as build phases
+
+### Warn: 
+* Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+
 ### Update
 * NSArray , NSDictionary compacity for iOS9 and iOS 10
 * different class cluster with different container element
@@ -18,16 +21,15 @@ __NSArray0       __NSSingleArrayI            __NSArrayI
 __NSDictionary0  __NSSingleEntryDictionaryI  __NSDictionaryI
 ```
 
-### Desciption
-* Swizzle commonly used function of Foundation container to prevent nil crash
-* Assert in Debug and log in Release
-
-### Usage:
-	
-* involve NSObjectSafe.h/NSObjectSafe.m as build phases
-
-### Warn: 
-* Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+### unrecognized selector protection
+* NSSafeProxy: unrecognized selector [print:] sent to A
+```
+@interface A : NSObject
+- (void)print:(NSString*)msg;
+@end
+@implementation A
+@end
+```
 
 ### Object Literals
 
