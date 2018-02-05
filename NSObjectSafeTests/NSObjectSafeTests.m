@@ -118,12 +118,14 @@
 //    NSString* value = nil;
 //    NSLog(@"%@", @{@"b":@"c",key:value, @"e":value});
     
-    NSMutableString* a = @"hello";
-    [a rangeOfString:nil];
+//    NSMutableString* a = @"hello";
+//    [a rangeOfString:nil];
     
-//    NSAttributedString* attr = [[NSAttributedString alloc] initWithString:nil attributes:nil];
-//    attr = [[NSAttributedString alloc] initWithString:@"hello"];
-//    NSLog(@"%@", [attr attributedSubstringFromRange:NSMakeRange(1, 10)]);
+    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
+    attr = [[NSMutableAttributedString alloc] initWithString:@"hello"];
+    [attr addAttribute:@"a" value:@"b" range:NSMakeRange(10, 2)];
+    NSRange range;
+    NSLog(@"%@", [attr attribute:@"a" atIndex:5 effectiveRange:&range]);
 //    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
 //    attr = [[NSMutableAttributedString alloc] initWithString:@""];
 //    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];

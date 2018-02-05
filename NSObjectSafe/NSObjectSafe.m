@@ -363,6 +363,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 普通方法 */
         obj = [[NSAttributedString alloc] init];
         [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj swizzleInstanceMethod:@selector(attribute:atIndex:effectiveRange:) withMethod:@selector(hookAttribute:atIndex:effectiveRange:)];
         [obj swizzleInstanceMethod:@selector(enumerateAttribute:inRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttribute:inRange:options:usingBlock:)];
         [obj swizzleInstanceMethod:@selector(enumerateAttributesInRange:options:usingBlock:) withMethod:@selector(hookEnumerateAttributesInRange:options:usingBlock:)];
         [obj release];
@@ -374,6 +375,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     return nil;
 }
+- (id)hookAttribute:(NSAttributedStringKey)attrName atIndex:(NSUInteger)location effectiveRange:(nullable NSRangePointer)range
+{
+    if (location < self.length){
+        return [self hookAttribute:attrName atIndex:location effectiveRange:range];
+    }else{
+        return nil;
+    }
+}
 - (NSAttributedString *)hookAttributedSubstringFromRange:(NSRange)range {
     if (range.location + range.length <= self.length) {
         return [self hookAttributedSubstringFromRange:range];
@@ -382,7 +391,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
     return nil;
 }
-- (void)hookEnumerateAttribute:(NSString*)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
+- (void)hookEnumerateAttribute:(NSString *)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
 {
     if (range.location + range.length <= self.length) {
         [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
@@ -416,6 +425,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 普通方法 */
         obj = [[NSMutableAttributedString alloc] init];
         [obj swizzleInstanceMethod:@selector(attributedSubstringFromRange:) withMethod:@selector(hookAttributedSubstringFromRange:)];
+        [obj swizzleInstanceMethod:@selector(attribute:atIndex:effectiveRange:) withMethod:@selector(hookAttribute:atIndex:effectiveRange:)];
         [obj swizzleInstanceMethod:@selector(addAttribute:value:range:) withMethod:@selector(hookAddAttribute:value:range:)];
         [obj swizzleInstanceMethod:@selector(addAttributes:range:) withMethod:@selector(hookAddAttributes:range:)];
         [obj swizzleInstanceMethod:@selector(setAttributes:range:) withMethod:@selector(hookSetAttributes:range:)];
@@ -447,6 +457,14 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
     }
     return nil;
+}
+- (id)hookAttribute:(NSAttributedStringKey)attrName atIndex:(NSUInteger)location effectiveRange:(nullable NSRangePointer)range
+{
+    if (location < self.length){
+        return [self hookAttribute:attrName atIndex:location effectiveRange:range];
+    }else{
+        return nil;
+    }
 }
 - (void)hookAddAttribute:(id)name value:(id)value range:(NSRange)range {
     if (!range.length) {
@@ -1067,5 +1085,6 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 @end
+
 
 
