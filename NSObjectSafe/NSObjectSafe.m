@@ -57,15 +57,24 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
                             method_getTypeEncoding(originalMethod));
         
     } else {
-        method_exchangeImplementations(originalMethod, swizzledMethod);
+        /* swizzleMethod maybe belong to super */
+        class_replaceMethod(metacls,
+                            newSelector,
+                            class_replaceMethod(metacls,
+                                                origSelector,
+                                                method_getImplementation(swizzledMethod),
+                                                method_getTypeEncoding(swizzledMethod)),
+                            method_getTypeEncoding(originalMethod));
     }
 }
+
 - (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
     Class cls = [self class];
     /* if current class not exist selector, then get super*/
     Method originalMethod = class_getInstanceMethod(cls, origSelector);
     Method swizzledMethod = class_getInstanceMethod(cls, newSelector);
+    
     /* add selector if not exist, implement append with method */
     if (class_addMethod(cls,
                         origSelector,
@@ -764,7 +773,7 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
         [obj release];
         
-        /* iOS10 以上，单个内容类型是__NSArraySingleEntryDictionaryI */
+        /* iOS10 以上，单个内容类型是__NSSingleEntryDictionaryI */
         if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
             obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, nil];
             [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];

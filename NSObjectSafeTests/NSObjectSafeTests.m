@@ -10,16 +10,93 @@
 #import "NSObjectSafe.h"
 #import <objc/runtime.h>
 
+@interface NSObject(test)
+@end
+
+@implementation NSObject(test)
+- (void)wrongSwizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
+{
+    Class cls = [self class];
+    /* if current class not exist selector, then get super*/
+    Method originalMethod = class_getInstanceMethod(cls, origSelector);
+    Method swizzledMethod = class_getInstanceMethod(cls, newSelector);
+    
+    /* add selector if not exist, implement append with method */
+    if (class_addMethod(cls,
+                        origSelector,
+                        method_getImplementation(swizzledMethod),
+                        method_getTypeEncoding(swizzledMethod)) ) {
+        /* replace class instance method, added if selector not exist */
+        /* for class cluster , it always add new selector here */
+        class_replaceMethod(cls,
+                            newSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+        
+    } else {
+        /* swizzleMethod maybe belong to super */
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+    }
+}
++ (void)wrongSwizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
+{
+    Class cls = [self class];
+    
+    Method originalMethod = class_getClassMethod(cls, origSelector);
+    Method swizzledMethod = class_getClassMethod(cls, newSelector);
+    
+    Class metacls = objc_getMetaClass(NSStringFromClass(cls).UTF8String);
+    if (class_addMethod(metacls,
+                        origSelector,
+                        method_getImplementation(swizzledMethod),
+                        method_getTypeEncoding(swizzledMethod)) ) {
+        /* swizzing super class method, added if not exist */
+        class_replaceMethod(metacls,
+                            newSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+        
+    } else {
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+    }
+}
+@end
+
 @interface Base : NSObject
+- (void)print:(NSString*)msg;
 @end
 @implementation Base
-
+- (void)print:(NSString*)msg
+{
+    NSLog(@"Base obj %@ print say:%@", NSStringFromClass(self.class), msg);
+}
+- (void)hookPrint:(NSString*)msg {
+    NSLog(@"hook obj %@ print say:%@", NSStringFromClass(self.class), msg);
+}
++ (void)printClass:(NSString*)msg
+{
+    NSLog(@"Base class %@ print say:%@", NSStringFromClass(self.class), msg);
+}
++ (void)hookPrintClass:(NSString*)msg {
+    NSLog(@"hook class %@ print say:%@", NSStringFromClass(self.class), msg);
+}
 @end
 
 @interface A : Base
-- (void)print:(NSString*)msg;
 @end
 @implementation A
+- (void)print:(NSString*)msg {
+    NSLog(@"A obj print say:%@", msg);
+}
++ (void)printClass:(NSString*)msg {
+    NSLog(@"A class print say:%@", msg);
+}
+
+@end
+
+@interface B : Base
+@end
+@implementation B
 @end
 
 
@@ -32,6 +109,13 @@
 - (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
+    [A swizzleInstanceMethod:@selector(print:) withMethod:@selector(hookPrint:)];
+    [B swizzleInstanceMethod:@selector(print:) withMethod:@selector(hookPrint:)];
+    
+    
+    [A swizzleClassMethod:@selector(printClass:) withMethod:@selector(hookPrintClass:)];
+    [B swizzleClassMethod:@selector(printClass:) withMethod:@selector(hookPrintClass:)];
+    
 }
 
 - (void)tearDown {
@@ -42,17 +126,24 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
+    
+    A* a = [A new];[a print:@"hello"];
+    B* b = [B new];[b print:@"hello"];
+    
+    [A printClass:@"hello"];
+    [B printClass:@"hello"];
+    
 //    A* a = [A new];
 //    [a print:@"hello"];
 //    NSArray* array = @"hello";
 //    NSString* item = [array objectAtIndex:1];
 //    NSLog(@"%@", item);
-
+//    NSArray* array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
+//    [array subarrayWithRange:NSMakeRange(0, 1)];
+    
 //    NSArray* array = [NSArray arrayWithObjects:nil];//__NSArray0
-//    NSLog(@"%@", array[1]);
-//    [array objectAtIndex:4];
 //    [array subarrayWithRange:NSMakeRange(2, 2)];
-//    
+//
 //    array = [NSArray arrayWithObjects:@1, nil];//__NSSingleObjectArrayI
 //    NSLog(@"%@", array[2]);
 //    [array objectAtIndex:4];
@@ -79,9 +170,9 @@
 //    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1", nil];//__NSSingleEntryDictionaryI
 //    [dict objectForKey:nil];
 //    
-//    dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
+//    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:@"a",@"1",@"b",@"2", nil];//__NSDictionaryI
 //    [dict objectForKey:nil];
-//    
+//
 //    for (NSInteger i = 0; i < 1000; ++i) {
 //        NSMutableDictionary* mdict = [[NSMutableDictionary alloc] initWithCapacity:3];
 //        [mdict setObject:@1 forKey:@1];
@@ -121,11 +212,12 @@
 //    NSMutableString* a = @"hello";
 //    [a rangeOfString:nil];
     
-    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
-    attr = [[NSMutableAttributedString alloc] initWithString:@"hello"];
-    [attr addAttribute:@"a" value:@"b" range:NSMakeRange(10, 2)];
-    NSRange range;
-    NSLog(@"%@", [attr attribute:@"a" atIndex:5 effectiveRange:&range]);
+//    NSMutableAttributedString* attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
+//    attr = [[NSMutableAttributedString alloc] initWithString:@"hello"];
+//    [attr addAttribute:@"a" value:@"b" range:NSMakeRange(1, 2)];
+//    NSRange range;
+//    NSLog(@"%@", [attr attribute:@"a" atIndex:5 effectiveRange:&range]);
+//    [attr removeAttribute:@"a" range:NSMakeRange(1, 20)];
 //    attr = [[NSMutableAttributedString alloc] initWithString:nil attributes:nil];
 //    attr = [[NSMutableAttributedString alloc] initWithString:@""];
 //    [attr attributedSubstringFromRange:NSMakeRange(1, 3)];
