@@ -15,11 +15,12 @@
 ### Update 2018.6.26
 * remove unused swizze for NSDictionary objectForKey:
 * more class cluster support
-* NSArray
+```
+NSArray
     __NSArrayI_Transfer, __NSArrayReversed, __NSFrozenArrayM, __NSCFArray
-* NSString
+NSString
     NSTaggedPointerString, __NSCFString, _NSCFConstantString
-* NSData
+NSData
     NSConcreteData, NSConcreteMutableData, _NSZeroData, _NSInlineData, __NSCFData
 ```
 
