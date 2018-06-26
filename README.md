@@ -12,13 +12,15 @@
 ### Warn: 
 * Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
 
-### Update
-* NSArray , NSDictionary compacity for iOS9 and iOS 10
-* different class cluster with different container element
-```
-0 element       1 element                    > 1 element   
-__NSArray0       __NSSingleArrayI            __NSArrayI
-__NSDictionary0  __NSSingleEntryDictionaryI  __NSDictionaryI
+### Update 2018.6.26
+* remove unused swizze for NSDictionary objectForKey:
+* more class cluster support
+* NSArray
+    __NSArrayI_Transfer, __NSArrayReversed, __NSFrozenArrayM, __NSCFArray
+* NSString
+    NSTaggedPointerString, __NSCFString, _NSCFConstantString
+* NSData
+    NSConcreteData, NSConcreteMutableData, _NSZeroData, _NSInlineData, __NSCFData
 ```
 
 ### unrecognized selector protection

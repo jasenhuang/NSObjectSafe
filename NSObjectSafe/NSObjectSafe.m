@@ -10,6 +10,10 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
+#if __has_feature(objc_arc)
+#error This file must be compiled with MRR. Use -fno-objc-arc flag.
+#endif
+
 NSString *const NSSafeSuffix = @"_NSSafe_";
 NSString *const NSSafeNotification = @"_NSSafeNotification_";
 
@@ -18,7 +22,7 @@ void (^safeAssertCallback)(const char *, int, NSString *, ...);
 #define SFAssert(condition, ...) \
 if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); \
 if (safeAssertCallback) safeAssertCallback(__FUNCTION__, __LINE__, __VA_ARGS__);} \
-NSAssert(condition, @"%@", __VA_ARGS__);
+//NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
@@ -37,11 +41,9 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 }
 @end
 
-@implementation NSObject(Swizzle)
-+ (void)swizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
+void swizzleClassMethod(Class cls, SEL origSelector, SEL newSelector)
 {
-    Class cls = [self class];
-    
+    if (!cls) return;
     Method originalMethod = class_getClassMethod(cls, origSelector);
     Method swizzledMethod = class_getClassMethod(cls, newSelector);
     
@@ -68,9 +70,11 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 
-- (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
+void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 {
-    Class cls = [self class];
+    if (!cls) {
+        return;
+    }
     /* if current class not exist selector, then get super*/
     Method originalMethod = class_getInstanceMethod(cls, origSelector);
     Method swizzledMethod = class_getInstanceMethod(cls, newSelector);
@@ -99,10 +103,20 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 
+@implementation NSObject(Swizzle)
++ (void)swizzleClassMethod:(SEL)origSelector withMethod:(SEL)newSelector
+{
+    swizzleClassMethod(self.class, origSelector, newSelector);
+}
+
+- (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
+{
+    swizzleInstanceMethod(self.class, origSelector, newSelector);
+}
+
 + (void)setSafeAssertCallback:(void (^)(const char *, int, NSString *, ...))callback {
     safeAssertCallback = [callback copy];
 }
-
 @end
 
 @implementation NSObject(Safe)
@@ -190,14 +204,18 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
         [obj release];
         
-        /* 普通方法 */
-        obj = [[NSString alloc] init];
-        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(hookStringByAppendingString:)];
-        [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
-        [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
-        [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
-        [obj swizzleInstanceMethod:@selector(rangeOfString:options:range:locale:) withMethod:@selector(hookRangeOfString:options:range:locale:)];
-        [obj release];
+        /* _NSCFConstantString */
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFConstantString"), @selector(substringFromIndex:), @selector(hookSubstringFromIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFConstantString"), @selector(substringToIndex:), @selector(hookSubstringToIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFConstantString"), @selector(substringWithRange:), @selector(hookSubstringWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFConstantString"), @selector(rangeOfString:options:range:locale:), @selector(hookRangeOfString:options:range:locale:));
+        
+        /* NSTaggedPointerString */
+        swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringFromIndex:), @selector(hookSubstringFromIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringToIndex:), @selector(hookSubstringToIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringWithRange:), @selector(hookSubstringWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(rangeOfString:options:range:locale:), @selector(hookRangeOfString:options:range:locale:));
+        
     });
 }
 + (NSString*) hookStringWithUTF8String:(const char *)nullTerminatedCString
@@ -281,17 +299,15 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [obj swizzleInstanceMethod:@selector(initWithCString:encoding:) withMethod:@selector(hookInitWithCString:encoding:)];
         [obj release];
         
-        /* 普通方法 */
-        obj = [[NSMutableString alloc] init];
-        [obj swizzleInstanceMethod:@selector(appendString:) withMethod:@selector(hookAppendString:)];
-        [obj swizzleInstanceMethod:@selector(insertString:atIndex:) withMethod:@selector(hookInsertString:atIndex:)];
-        [obj swizzleInstanceMethod:@selector(deleteCharactersInRange:) withMethod:@selector(hookDeleteCharactersInRange:)];
-        [obj swizzleInstanceMethod:@selector(stringByAppendingString:) withMethod:@selector(hookStringByAppendingString:)];
-        [obj swizzleInstanceMethod:@selector(substringFromIndex:) withMethod:@selector(hookSubstringFromIndex:)];
-        [obj swizzleInstanceMethod:@selector(substringToIndex:) withMethod:@selector(hookSubstringToIndex:)];
-        [obj swizzleInstanceMethod:@selector(substringWithRange:) withMethod:@selector(hookSubstringWithRange:)];
-        [obj release];
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(appendString:), @selector(hookAppendString:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(insertString:atIndex:), @selector(hookInsertString:atIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(deleteCharactersInRange:), @selector(hookDeleteCharactersInRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(substringFromIndex:), @selector(hookSubstringFromIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(substringToIndex:), @selector(hookSubstringToIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(substringWithRange:), @selector(hookSubstringWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFString"), @selector(rangeOfString:options:range:locale:), @selector(hookRangeOfString:options:range:locale:));
     });
+    
 }
 - (nullable instancetype) hookInitWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding
 {
@@ -586,31 +602,35 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         [NSArray swizzleClassMethod:@selector(arrayWithObject:) withMethod:@selector(hookArrayWithObject:)];
         [NSArray swizzleClassMethod:@selector(arrayWithObjects:count:) withMethod:@selector(hookArrayWithObjects:count:)];
         
-        /* 数组有内容obj类型才是__NSArrayI */
-        NSArray* obj = [[NSArray alloc] initWithObjects:@0, @1, nil];
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
-        [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
-        [obj release];
+        /* 没内容类型是__NSArray0 */
+        swizzleInstanceMethod(NSClassFromString(@"__NSArray0"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArray0"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArray0"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
         
-        /* iOS10 以上，单个内容类型是__NSArraySingleObjectI */
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
-            obj = [[NSArray alloc] initWithObjects:@0, nil];
-            [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
-            [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
-            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
-            [obj release];
-        }
+        /* 有内容obj类型才是__NSArrayI */
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
         
-        /* iOS9 以上，没内容类型是__NSArray0 */
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
-            obj = [[NSArray alloc] init];
-            [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex0:)];
-            [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
-            [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
-            [obj release];
-        }
+        /* 有内容obj类型才是__NSArrayI_Transfer */
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI_Transfer"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI_Transfer"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayI_Transfer"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
         
+        /* iOS10 以上，单个内容类型是__NSSingleObjectArrayI */
+        swizzleInstanceMethod(NSClassFromString(@"__NSSingleObjectArrayI"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSSingleObjectArrayI"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSSingleObjectArrayI"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
+        
+        /* __NSFrozenArrayM */
+        swizzleInstanceMethod(NSClassFromString(@"__NSFrozenArrayM"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSFrozenArrayM"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSFrozenArrayM"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
+        
+        /* __NSArrayReversed */
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
     });
 }
 + (instancetype) hookArrayWithObject:(id)anObject
@@ -656,6 +676,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     for (NSInteger i = 0; i < cnt ; ++i) {
         if (objects[i]) {
             objs[index++] = objects[i];
+        }else {
+            SFAssert(NO, @"NSArray invalid args hookArrayWithObjects:[%@] atIndex:[%@]", objects[i], @(i));
         }
     }
     return [self hookArrayWithObjects:objs count:index];
@@ -667,19 +689,28 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSMutableArray* obj = [[NSMutableArray alloc] init];
-        //对象方法 __NSArrayM 和 __NSArrayI 都有实现，都要swizz
-        [obj swizzleInstanceMethod:@selector(objectAtIndex:) withMethod:@selector(hookObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(objectAtIndexedSubscript:) withMethod:@selector(hookObjectAtIndexedSubscript:)];
         
-        [obj swizzleInstanceMethod:@selector(addObject:) withMethod:@selector(hookAddObject:)];
-        [obj swizzleInstanceMethod:@selector(insertObject:atIndex:) withMethod:@selector(hookInsertObject:atIndex:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectAtIndex:) withMethod:@selector(hookRemoveObjectAtIndex:)];
-        [obj swizzleInstanceMethod:@selector(replaceObjectAtIndex:withObject:) withMethod:@selector(hookReplaceObjectAtIndex:withObject:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectsInRange:) withMethod:@selector(hookRemoveObjectsInRange:)];
-        [obj swizzleInstanceMethod:@selector(subarrayWithRange:) withMethod:@selector(hookSubarrayWithRange:)];
+        /* __NSArrayM */
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
         
-        [obj release];
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(addObject:), @selector(hookAddObject:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(insertObject:atIndex:), @selector(hookInsertObject:atIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(removeObjectAtIndex:), @selector(hookRemoveObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(replaceObjectAtIndex:withObject:), @selector(hookReplaceObjectAtIndex:withObject:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSArrayM"), @selector(removeObjectsInRange:), @selector(hookRemoveObjectsInRange:));
+        
+        /* __NSCFArray */
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(addObject:), @selector(hookAddObject:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(insertObject:atIndex:), @selector(hookInsertObject:atIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(removeObjectAtIndex:), @selector(hookRemoveObjectAtIndex:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(replaceObjectAtIndex:withObject:), @selector(hookReplaceObjectAtIndex:withObject:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFArray"), @selector(removeObjectsInRange:), @selector(hookRemoveObjectsInRange:));
     });
 }
 - (void) hookAddObject:(id)anObject {
@@ -759,6 +790,103 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 @end
 
 #pragma mark - NSDictionary
+@implementation NSData (Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteData"), @selector(subdataWithRange:), @selector(hookSubdataWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteData"), @selector(rangeOfData:options:range:), @selector(hookRangeOfData:options:range:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableData"), @selector(subdataWithRange:), @selector(hookSubdataWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableData"), @selector(rangeOfData:options:range:), @selector(hookRangeOfData:options:range:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"_NSZeroData"), @selector(subdataWithRange:), @selector(hookSubdataWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"_NSZeroData"), @selector(rangeOfData:options:range:), @selector(hookRangeOfData:options:range:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"_NSInlineData"), @selector(subdataWithRange:), @selector(hookSubdataWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"_NSInlineData"), @selector(rangeOfData:options:range:), @selector(hookRangeOfData:options:range:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFData"), @selector(subdataWithRange:), @selector(hookSubdataWithRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFData"), @selector(rangeOfData:options:range:), @selector(hookRangeOfData:options:range:));
+        
+    });
+}
+- (NSData*)hookSubdataWithRange:(NSRange)range
+{
+    if (range.location + range.length <= self.length){
+        return [self hookSubdataWithRange:range];
+    }else if (range.location < self.length){
+        return [self hookSubdataWithRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+    return nil;
+}
+
+- (NSRange)hookRangeOfData:(NSData *)dataToFind options:(NSDataSearchOptions)mask range:(NSRange)searchRange
+{
+    if (dataToFind){
+        if (searchRange.location + searchRange.length <= self.length) {
+            return [self hookRangeOfData:dataToFind options:mask range:searchRange];
+        }else if (searchRange.location < self.length){
+            return [self hookRangeOfData:dataToFind options:mask range:NSMakeRange(searchRange.location, self.length - searchRange.location) ];
+        }
+        return NSMakeRange(NSNotFound, 0);
+    }else{
+        SFAssert(NO, @"hookRangeOfData:options:range: dataToFind is nil");
+        return NSMakeRange(NSNotFound, 0);
+    }
+}
+@end
+
+@implementation NSMutableData (Safe)
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableData"), @selector(resetBytesInRange:), @selector(hookResetBytesInRange:));
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableData"), @selector(replaceBytesInRange:withBytes:), @selector(hookReplaceBytesInRange:withBytes:));
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableData"), @selector(replaceBytesInRange:withBytes:length:), @selector(hookReplaceBytesInRange:withBytes:length:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFData"), @selector(resetBytesInRange:), @selector(hookResetBytesInRange:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFData"), @selector(replaceBytesInRange:withBytes:), @selector(hookReplaceBytesInRange:withBytes:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSCFData"), @selector(replaceBytesInRange:withBytes:length:), @selector(hookReplaceBytesInRange:withBytes:length:));
+    });
+}
+
+- (void)hookResetBytesInRange:(NSRange)range
+{
+    if (range.location + range.length <= self.length){
+        [self hookResetBytesInRange:range];
+    }else if (range.location < self.length){
+        [self hookResetBytesInRange:NSMakeRange(range.location, self.length-range.location)];
+    }
+}
+
+- (void)hookReplaceBytesInRange:(NSRange)range withBytes:(const void *)bytes
+{
+    if (bytes){
+        if (range.location + range.length <= self.length) {
+            [self hookReplaceBytesInRange:range withBytes:bytes];
+        }else if (range.location < self.length){
+            [self hookReplaceBytesInRange:NSMakeRange(range.location, self.length - range.location) withBytes:bytes];
+        }
+    }else{
+        SFAssert(NO, @"hookReplaceBytesInRange:withBytes: bytes is nil");
+    }
+}
+
+- (void)hookReplaceBytesInRange:(NSRange)range withBytes:(const void *)bytes length:(NSUInteger)replacementLength
+{
+    if (range.location + range.length <= self.length) {
+        [self hookReplaceBytesInRange:range withBytes:bytes length:replacementLength];
+    }else if (range.location < self.length){
+        [self hookReplaceBytesInRange:NSMakeRange(range.location, self.length - range.location) withBytes:bytes length:replacementLength];
+    }
+}
+
+@end
+
+#pragma mark - NSDictionary
 @implementation NSDictionary (Safe)
 + (void)load
 {
@@ -767,25 +895,6 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
         /* 类方法 */
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(hookDictionaryWithObject:forKey:)];
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObjects:forKeys:count:) withMethod:@selector(hookDictionaryWithObjects:forKeys:count:)];
-        
-        /* 数组有内容obj类型才是__NSDictionaryI */
-        NSDictionary* obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, @0, @0, nil];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
-        [obj release];
-        
-        /* iOS10 以上，单个内容类型是__NSSingleEntryDictionaryI */
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 10.0){
-            obj = [[NSDictionary alloc] initWithObjectsAndKeys:@0, @0, nil];
-            [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
-            [obj release];
-        }
-        
-        /* iOS9 以上，没内容类型是__NSDictionary0 */
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0){
-            obj = [[NSDictionary alloc] init];
-            [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
-            [obj release];
-        }
     });
 }
 + (instancetype) hookDictionaryWithObject:(id)object forKey:(id)key
@@ -806,20 +915,10 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
             ks[index] = keys[i];
             objs[index] = objects[i];
             ++index;
-        } else {
-            SFAssert(NO, @"NSDictionary invalid args hookDictionaryWithObject:[%@] forKey:[%@]", objects[i], keys[i]);
         }
     }
     return [self hookDictionaryWithObjects:objs forKeys:ks count:index];
 }
-- (id) hookObjectForKey:(id)aKey
-{
-    if (aKey){
-        return [self hookObjectForKey:aKey];
-    }
-    return nil;
-}
-
 @end
 
 @implementation NSMutableDictionary (Safe)
@@ -827,20 +926,11 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
 {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSMutableDictionary* obj = [[NSMutableDictionary alloc] init];
-        [obj swizzleInstanceMethod:@selector(objectForKey:) withMethod:@selector(hookObjectForKey:)];
-        [obj swizzleInstanceMethod:@selector(setObject:forKey:) withMethod:@selector(hookSetObject:forKey:)];
-        [obj swizzleInstanceMethod:@selector(removeObjectForKey:) withMethod:@selector(hookRemoveObjectForKey:)];
-        [obj release];
+        swizzleInstanceMethod(NSClassFromString(@"__NSDictionaryM"), @selector(setObject:forKey:), @selector(hookSetObject:forKey:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSDictionaryM"), @selector(removeObjectForKey:), @selector(hookRemoveObjectForKey:));
     });
 }
-- (id) hookObjectForKey:(id)aKey
-{
-    if (aKey){
-        return [self hookObjectForKey:aKey];
-    }
-    return nil;
-}
+
 - (void) hookSetObject:(id)anObject forKey:(id)aKey {
     if (anObject && aKey) {
         [self hookSetObject:anObject forKey:aKey];
@@ -1094,6 +1184,3 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     }
 }
 @end
-
-
-
