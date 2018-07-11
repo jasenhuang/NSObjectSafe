@@ -177,6 +177,7 @@
     [mdict setObject:nil forKey:@1];
     [mdict setObject:@1 forKey:@1];
     [mdict removeObjectForKey:nil];
+    mdict[@1] = nil;
     [NSMutableArray arrayWithArray:[mdict allValues]];
     
     NSString* string = @"12345";
@@ -263,8 +264,10 @@
 
     NSMutableData* mdata = [NSMutableData data];
     [mdata appendData:[@"123" dataUsingEncoding:NSUTF8StringEncoding]];
-    [mdata resetBytesInRange:NSMakeRange(1, 10)];
-    [mdata replaceBytesInRange:NSMakeRange(1, 10) withBytes:NULL length:0];
+    [mdata resetBytesInRange:NSMakeRange(10, 10)];
+    [mdata replaceBytesInRange:NSMakeRange(0, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes length:5];
+    [mdata replaceBytesInRange:NSMakeRange(10, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes];
+    [mdata replaceBytesInRange:NSMakeRange(1, 10) withBytes:NULL];
     
 }
 

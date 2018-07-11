@@ -865,10 +865,10 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookReplaceBytesInRange:(NSRange)range withBytes:(const void *)bytes
 {
     if (bytes){
-        if (range.location + range.length <= self.length) {
+        if (range.location < self.length) {
             [self hookReplaceBytesInRange:range withBytes:bytes];
-        }else if (range.location < self.length){
-            [self hookReplaceBytesInRange:NSMakeRange(range.location, self.length - range.location) withBytes:bytes];
+        }else {
+            SFAssert(NO, @"hookReplaceBytesInRange:withBytes: range.location error");
         }
     }else{
         SFAssert(NO, @"hookReplaceBytesInRange:withBytes: bytes is nil");
@@ -928,6 +928,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
     dispatch_once(&onceToken, ^{
         swizzleInstanceMethod(NSClassFromString(@"__NSDictionaryM"), @selector(setObject:forKey:), @selector(hookSetObject:forKey:));
         swizzleInstanceMethod(NSClassFromString(@"__NSDictionaryM"), @selector(removeObjectForKey:), @selector(hookRemoveObjectForKey:));
+        swizzleInstanceMethod(NSClassFromString(@"__NSDictionaryM"), @selector(setObject:forKeyedSubscript:), @selector(hookSetObject:forKeyedSubscript:));
     });
 }
 
@@ -944,6 +945,15 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         [self hookRemoveObjectForKey:aKey];
     } else {
         SFAssert(NO, @"NSMutableDictionary invalid args hookRemoveObjectForKey:[%@]", aKey);
+    }
+}
+
+- (void)hookSetObject:(id)obj forKeyedSubscript:(id<NSCopying>)key
+{
+    if (key){
+        [self hookSetObject:obj forKeyedSubscript:key];
+    }else {
+        SFAssert(NO, @"NSMutableDictionary invalid args hookSetObject:forKeyedSubscript:");
     }
 }
 
