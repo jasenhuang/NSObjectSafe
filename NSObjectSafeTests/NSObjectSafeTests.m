@@ -126,7 +126,7 @@
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
-    
+
     A* a = [A new];[a print:@"hello"];
     B* b = [B new];[b print:@"hello"];
 
@@ -268,7 +268,7 @@
     [mdata replaceBytesInRange:NSMakeRange(0, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes length:5];
     [mdata replaceBytesInRange:NSMakeRange(10, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes];
     [mdata replaceBytesInRange:NSMakeRange(1, 10) withBytes:NULL];
-    
+    SEL s = @selector(objectAtIndex:);
 }
 
 - (void)testPerformanceExample {
