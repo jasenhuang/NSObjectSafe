@@ -6,6 +6,19 @@
 ### Update 2018.6.26
 * remove unused swizze for NSDictionary objectForKey:
 * more class cluster support
+```
+NSArray
+    __NSArrayI_Transfer, __NSArrayReversed, __NSFrozenArrayM, __NSCFArray
+NSString
+    NSTaggedPointerString, __NSCFString, _NSCFConstantString
+NSData
+    NSConcreteData, NSConcreteMutableData, _NSZeroData, _NSInlineData, __NSCFData
+```
+
+### Warn: 
+* Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+* Conflict with MultiDelegate
+
 
 ### Desciption
 * Swizzle commonly used function of Foundation container to prevent nil crash
@@ -15,19 +28,6 @@
 ### Usage:
 	
 * involve NSObjectSafe.h/NSObjectSafe.m as build phases
-
-### Warn: 
-* Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
-* Conflict with MultiDelegate
-
-```
-NSArray
-    __NSArrayI_Transfer, __NSArrayReversed, __NSFrozenArrayM, __NSCFArray
-NSString
-    NSTaggedPointerString, __NSCFString, _NSCFConstantString
-NSData
-    NSConcreteData, NSConcreteMutableData, _NSZeroData, _NSInlineData, __NSCFData
-```
 
 ### unrecognized selector protection
 * NSSafeProxy: unrecognized selector [print:] sent to A
