@@ -1,5 +1,12 @@
 # NSObject-Safe
 
+### Update 2018.11.20
+* add thread-safe support
+
+### Update 2018.6.26
+* remove unused swizze for NSDictionary objectForKey:
+* more class cluster support
+
 ### Desciption
 * Swizzle commonly used function of Foundation container to prevent nil crash
 * Hook forwardInvocation to catch unrecognized selector exception
@@ -11,10 +18,8 @@
 
 ### Warn: 
 * Compile NSObjectSafe.m with -fno-objc-arc, otherwise it will cause strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
+* Conflict with MultiDelegate
 
-### Update 2018.6.26
-* remove unused swizze for NSDictionary objectForKey:
-* more class cluster support
 ```
 NSArray
     __NSArrayI_Transfer, __NSArrayReversed, __NSFrozenArrayM, __NSCFArray
