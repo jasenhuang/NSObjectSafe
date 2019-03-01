@@ -999,7 +999,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 {
     @synchronized (self) {
         if (bytes){
-            if (range.location < self.length) {
+            if (range.location <= self.length) {
                 [self hookReplaceBytesInRange:range withBytes:bytes];
             }else {
                 SFAssert(NO, @"hookReplaceBytesInRange:withBytes: range.location error");
