@@ -211,6 +211,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         
         /* NSTaggedPointerString */
         swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(stringByAppendingString:), @selector(hookStringByAppendingString:));
+        
         swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringFromIndex:), @selector(hookSubstringFromIndex:));
         swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringToIndex:), @selector(hookSubstringToIndex:));
         swizzleInstanceMethod(NSClassFromString(@"NSTaggedPointerString"), @selector(substringWithRange:), @selector(hookSubstringWithRange:));
