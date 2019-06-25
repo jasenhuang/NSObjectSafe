@@ -12,7 +12,12 @@
  * strange release error: [UIKeyboardLayoutStar release]: message sent to deallocated instance
  */
 
+#import "TargetConditionals.h"
+#if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
+#elif TARGET_OS_MAC
+#import <Appkit/Appkit.h>
+#endif
 
 //! Project version number for NSObjectSafe.
 FOUNDATION_EXPORT double NSObjectSafeVersionNumber;
