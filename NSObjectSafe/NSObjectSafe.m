@@ -11,17 +11,32 @@
 #import <objc/message.h>
 
 #if __has_feature(objc_arc)
-#error This file must be compiled with MRR. Use -fno-objc-arc flag.
+#error This file must be compiled with MRC. Use -fno-objc-arc flag.
 #endif
 
-NSString *const NSSafeSuffix = @"_NSSafe_";
+/**
+ * 1: negative value
+ *  - NSUInteger  > NSIntegerMax
+ * 2: overflow
+ *  - (a+ b) > a
+ */
+NS_INLINE NSUInteger NSSafeMaxRange(NSRange range) {
+    // negative or reach limit
+    if (range.location >= NSNotFound
+        || range.length >= NSNotFound){
+        return NSNotFound;
+    }
+    // overflow
+    if ((range.location + range.length) < range.location){
+        return NSNotFound;
+    }
+    return (range.location + range.length);
+}
+
 NSString *const NSSafeNotification = @"_NSSafeNotification_";
 
-void (^safeAssertCallback)(const char *, int, NSString *, ...);
-
 #define SFAssert(condition, ...) \
-if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); \
-if (safeAssertCallback) safeAssertCallback(__FUNCTION__, __LINE__, __VA_ARGS__);} \
+if (!(condition)){ SFLog(__FILE__, __FUNCTION__, __LINE__, __VA_ARGS__);} \
 NSAssert(condition, @"%@", __VA_ARGS__);
 
 void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
@@ -31,8 +46,8 @@ void SFLog(const char* file, const char* func, int line, NSString* fmt, ...)
     va_end(args);
 }
 @interface NSSafeProxy : NSObject
-
 @end
+
 @implementation NSSafeProxy
 - (void)dealException:(NSString*)info
 {
@@ -112,10 +127,6 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)swizzleInstanceMethod:(SEL)origSelector withMethod:(SEL)newSelector
 {
     swizzleInstanceMethod(self.class, origSelector, newSelector);
-}
-
-+ (void)setSafeAssertCallback:(void (^)(const char *, int, NSString *, ...))callback {
-    safeAssertCallback = [callback copy];
 }
 @end
 
@@ -288,7 +299,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (NSString *)hookSubstringWithRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             return [self hookSubstringWithRange:range];
         }else if (range.location < self.length){
             return [self hookSubstringWithRange:NSMakeRange(range.location, self.length-range.location)];
@@ -300,7 +311,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 {
     @synchronized (self) {
         if (searchString){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 return [self hookRangeOfString:searchString options:mask range:range locale:locale];
             }else if (range.location < self.length){
                 return [self hookRangeOfString:searchString options:mask range:NSMakeRange(range.location, self.length-range.location) locale:locale];
@@ -383,7 +394,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void) hookDeleteCharactersInRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length){
+        if (NSSafeMaxRange(range) <= self.length){
             [self hookDeleteCharactersInRange:range];
         }else{
             SFAssert(NO, @"NSMutableString invalid args hookDeleteCharactersInRange:[%@]", NSStringFromRange(range));
@@ -420,7 +431,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (NSString *)hookSubstringWithRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             return [self hookSubstringWithRange:range];
         }else if (range.location < self.length){
             return [self hookSubstringWithRange:NSMakeRange(range.location, self.length-range.location)];
@@ -473,7 +484,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 }
 - (NSAttributedString *)hookAttributedSubstringFromRange:(NSRange)range {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             return [self hookAttributedSubstringFromRange:range];
         }else if (range.location < self.length){
             return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
@@ -484,7 +495,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookEnumerateAttribute:(NSString *)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
         }else if (range.location < self.length){
             [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
@@ -494,7 +505,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSString*,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
         }else if (range.location < self.length){
             [self hookEnumerateAttributesInRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
@@ -567,7 +578,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 }
 - (NSAttributedString *)hookAttributedSubstringFromRange:(NSRange)range {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             return [self hookAttributedSubstringFromRange:range];
         }else if (range.location < self.length){
             return [self hookAttributedSubstringFromRange:NSMakeRange(range.location, self.length-range.location)];
@@ -590,7 +601,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         if (!range.length) {
             [self hookAddAttribute:name value:value range:range];
         }else if (value){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookAddAttribute:name value:value range:range];
             }else if (range.location < self.length){
                 [self hookAddAttribute:name value:value range:NSMakeRange(range.location, self.length-range.location)];
@@ -605,7 +616,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         if (!range.length) {
             [self hookAddAttributes:attrs range:range];
         }else if (attrs){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookAddAttributes:attrs range:range];
             }else if (range.location < self.length){
                 [self hookAddAttributes:attrs range:NSMakeRange(range.location, self.length-range.location)];
@@ -620,7 +631,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         if (!range.length) {
             [self hookSetAttributes:attrs range:range];
         }else if (attrs){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookSetAttributes:attrs range:range];
             }else if (range.location < self.length){
                 [self hookSetAttributes:attrs range:NSMakeRange(range.location, self.length-range.location)];
@@ -635,7 +646,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         if (!range.length) {
             [self hookRemoveAttribute:name range:range];
         }else if (name){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookRemoveAttribute:name range:range];
             }else if (range.location < self.length) {
                 [self hookRemoveAttribute:name range:NSMakeRange(range.location, self.length-range.location)];
@@ -647,7 +658,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 }
 - (void)hookDeleteCharactersInRange:(NSRange)range {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookDeleteCharactersInRange:range];
         }else if (range.location < self.length) {
             [self hookDeleteCharactersInRange:NSMakeRange(range.location, self.length-range.location)];
@@ -657,7 +668,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookReplaceCharactersInRange:(NSRange)range withString:(NSString *)str {
     @synchronized (self) {
         if (str){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookReplaceCharactersInRange:range withString:str];
             }else if (range.location < self.length) {
                 [self hookReplaceCharactersInRange:NSMakeRange(range.location, self.length-range.location) withString:str];
@@ -670,7 +681,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookReplaceCharactersInRange:(NSRange)range withAttributedString:(NSString *)str {
     @synchronized (self) {
         if (str){
-            if (range.location + range.length <= self.length) {
+            if (NSSafeMaxRange(range) <= self.length) {
                 [self hookReplaceCharactersInRange:range withAttributedString:str];
             }else if (range.location < self.length) {
                 [self hookReplaceCharactersInRange:NSMakeRange(range.location, self.length-range.location) withAttributedString:str];
@@ -683,7 +694,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookEnumerateAttribute:(NSString*)attrName inRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id _Nullable, NSRange, BOOL * _Nonnull))block
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookEnumerateAttribute:attrName inRange:range options:opts usingBlock:block];
         }else if (range.location < self.length){
             [self hookEnumerateAttribute:attrName inRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
@@ -693,7 +704,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookEnumerateAttributesInRange:(NSRange)range options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSString*,id> * _Nonnull, NSRange, BOOL * _Nonnull))block
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookEnumerateAttributesInRange:range options:opts usingBlock:block];
         }else if (range.location < self.length){
             [self hookEnumerateAttributesInRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
@@ -773,7 +784,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (NSArray *)hookSubarrayWithRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.count){
+        if (NSSafeMaxRange(range) <= self.count){
             return [self hookSubarrayWithRange:range];
         }else if (range.location < self.count){
             return [self hookSubarrayWithRange:NSMakeRange(range.location, self.count-range.location)];
@@ -897,7 +908,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 
 - (void) hookRemoveObjectsInRange:(NSRange)range {
     @synchronized (self) {
-        if (range.location + range.length <= self.count) {
+        if (NSSafeMaxRange(range) <= self.count) {
             [self hookRemoveObjectsInRange:range];
         }else {
             SFAssert(NO, @"NSMutableArray invalid args hookRemoveObjectsInRange:[%@]", NSStringFromRange(range));
@@ -908,7 +919,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (NSArray *)hookSubarrayWithRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.count){
+        if (NSSafeMaxRange(range) <= self.count){
             return [self hookSubarrayWithRange:range];
         }else if (range.location < self.count){
             return [self hookSubarrayWithRange:NSMakeRange(range.location, self.count-range.location)];
@@ -945,7 +956,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (NSData*)hookSubdataWithRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length){
+        if (NSSafeMaxRange(range) <= self.length){
             return [self hookSubdataWithRange:range];
         }else if (range.location < self.length){
             return [self hookSubdataWithRange:NSMakeRange(range.location, self.length-range.location)];
@@ -954,14 +965,14 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
     }
 }
 
-- (NSRange)hookRangeOfData:(NSData *)dataToFind options:(NSDataSearchOptions)mask range:(NSRange)searchRange
+- (NSRange)hookRangeOfData:(NSData *)dataToFind options:(NSDataSearchOptions)mask range:(NSRange)range
 {
     @synchronized (self) {
         if (dataToFind){
-            if (searchRange.location + searchRange.length <= self.length) {
-                return [self hookRangeOfData:dataToFind options:mask range:searchRange];
-            }else if (searchRange.location < self.length){
-                return [self hookRangeOfData:dataToFind options:mask range:NSMakeRange(searchRange.location, self.length - searchRange.location) ];
+            if (NSSafeMaxRange(range) <= self.length) {
+                return [self hookRangeOfData:dataToFind options:mask range:range];
+            }else if (range.location < self.length){
+                return [self hookRangeOfData:dataToFind options:mask range:NSMakeRange(range.location, self.length - range.location) ];
             }
             return NSMakeRange(NSNotFound, 0);
         }else{
@@ -990,7 +1001,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookResetBytesInRange:(NSRange)range
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length){
+        if (NSSafeMaxRange(range) <= self.length){
             [self hookResetBytesInRange:range];
         }else if (range.location < self.length){
             [self hookResetBytesInRange:NSMakeRange(range.location, self.length-range.location)];
@@ -1016,7 +1027,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookReplaceBytesInRange:(NSRange)range withBytes:(const void *)bytes length:(NSUInteger)replacementLength
 {
     @synchronized (self) {
-        if (range.location + range.length <= self.length) {
+        if (NSSafeMaxRange(range) <= self.length) {
             [self hookReplaceBytesInRange:range withBytes:bytes length:replacementLength];
         }else if (range.location < self.length){
             [self hookReplaceBytesInRange:NSMakeRange(range.location, self.length - range.location) withBytes:bytes length:replacementLength];

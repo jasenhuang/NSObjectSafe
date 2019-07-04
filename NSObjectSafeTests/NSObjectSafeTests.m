@@ -184,6 +184,9 @@
     [string substringFromIndex:6];
     [string substringToIndex:6];
     [string substringWithRange:NSMakeRange(0, 6)];
+    [string substringWithRange:NSMakeRange(-1, -1)];
+    [string substringWithRange:NSMakeRange(1, -1)];
+    [string substringWithRange:NSMakeRange(-1, 1)];
 
     string = [NSString stringWithUTF8String:"1"];
     [string substringFromIndex:600];
