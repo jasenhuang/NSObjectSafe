@@ -2,10 +2,12 @@
 
 ### Update 2019.07.04
 * add overflow/negative support for NSRange
+```
 1: negative value
     - NSUInteger  > NSIntegerMax
 2: overflow
     - (a+ b) > a
+```
 
 ### Update 2018.11.20
 * add thread-safe support
