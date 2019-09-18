@@ -1018,7 +1018,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
             }else {
                 SFAssert(NO, @"hookReplaceBytesInRange:withBytes: range.location error");
             }
-        }else{
+        }else if (!NSEqualRanges(range, NSMakeRange(0, 0))){
             SFAssert(NO, @"hookReplaceBytesInRange:withBytes: bytes is nil");
         }
     }

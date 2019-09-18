@@ -270,7 +270,7 @@
     [mdata resetBytesInRange:NSMakeRange(10, 10)];
     [mdata replaceBytesInRange:NSMakeRange(0, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes length:5];
     [mdata replaceBytesInRange:NSMakeRange(10, 10) withBytes:[@"12345" dataUsingEncoding:NSUTF8StringEncoding].bytes];
-    [mdata replaceBytesInRange:NSMakeRange(1, 10) withBytes:NULL];
+    [mdata replaceBytesInRange:NSMakeRange(0, 0) withBytes:NULL];
     SEL s = @selector(objectAtIndex:);
 }
 
