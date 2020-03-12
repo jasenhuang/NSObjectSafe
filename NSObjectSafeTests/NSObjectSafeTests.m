@@ -138,6 +138,8 @@
     
     NSArray* array = @"hello";
     NSLog(@"%@", [array objectAtIndex:1]);
+
+    NSLog(@"%@", [NSArray performSelector:NSSelectorFromString(@"hello")]);
     
     array = [NSArray arrayWithObjects:@1, @2, nil];//__NSArrayI
     [array subarrayWithRange:NSMakeRange(0, 1)];
