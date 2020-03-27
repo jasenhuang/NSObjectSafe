@@ -1326,7 +1326,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 }
 - (void)hookSetObject:(id)obj forKey:(id)key // 0 cost
 {
-    if (obj && key) {
+    if (obj) {
         [self hookSetObject:obj forKey:key];
     }else {
         SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@]", obj, key);
@@ -1334,7 +1334,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 }
 - (void)hookSetObject:(id)obj forKey:(id)key cost:(NSUInteger)g
 {
-    if (obj && key) {
+    if (obj) {
         [self hookSetObject:obj forKey:key cost:g];
     }else {
         SFAssert(NO, @"NSCache invalid args hookSetObject:[%@] forKey:[%@] cost:[%@]", obj, key, @(g));
