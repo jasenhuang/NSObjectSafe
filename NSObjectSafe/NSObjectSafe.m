@@ -139,6 +139,9 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         swizzleInstanceMethod([NSObject class], @selector(removeObserver:forKeyPath:), @selector(hookRemoveObserver:forKeyPath:));
         swizzleInstanceMethod([NSObject class], @selector(methodSignatureForSelector:), @selector(hookMethodSignatureForSelector:));
         swizzleInstanceMethod([NSObject class], @selector(forwardInvocation:), @selector(hookForwardInvocation:));
+        
+        swizzleClassMethod(object_getClass([NSObject class]), @selector(methodSignatureForSelector:), @selector(hookClassMethodSignatureForSelector:));
+        swizzleClassMethod(object_getClass([NSObject class]), @selector(forwardInvocation:), @selector(hookClassForwardInvocation:));
     });
 }
 - (void) hookAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
@@ -192,6 +195,25 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void)hookForwardInvocation:(NSInvocation*)invocation
 {
     NSString* info = [NSString stringWithFormat:@"unrecognized selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(self.class)];
+    [[NSNotificationCenter defaultCenter] postNotificationName:NSSafeNotification object:self userInfo:@{@"invocation":invocation}];
+    [[[NSSafeProxy new] autorelease] dealException:info];
+}
+
++ (NSMethodSignature*)hookClassMethodSignatureForSelector:(SEL)aSelector {
+    
+    NSMethodSignature* sig = [self hookClassMethodSignatureForSelector:aSelector];
+    if (!sig){
+        if (class_getMethodImplementation(object_getClass([NSObject class]), @selector(methodSignatureForSelector:)) != class_getMethodImplementation(object_getClass(self.class), @selector(methodSignatureForSelector:))){
+            return nil;
+        }
+        return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
+    }
+    return sig;
+}
+
++ (void)hookClassForwardInvocation:(NSInvocation*)invocation {
+    
+    NSString* info = [NSString stringWithFormat:@"unrecognized class selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(self.class)];
     [[NSNotificationCenter defaultCenter] postNotificationName:NSSafeNotification object:self userInfo:@{@"invocation":invocation}];
     [[[NSSafeProxy new] autorelease] dealException:info];
 }
