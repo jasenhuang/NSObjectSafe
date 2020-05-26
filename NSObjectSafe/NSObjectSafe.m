@@ -565,9 +565,6 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
                               @selector(addAttributes:range:), @selector(hookAddAttributes:range:));
         
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
-                              @selector(addAttributes:range:), @selector(hookAddAttributes:range:));
-        
-        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
                               @selector(setAttributes:range:), @selector(hookSetAttributes:range:));
         
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
