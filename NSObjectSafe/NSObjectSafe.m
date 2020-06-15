@@ -585,6 +585,9 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
                               @selector(enumerateAttributesInRange:options:usingBlock:), @selector(hookEnumerateAttributesInRange:options:usingBlock:));
         
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
+                              @selector(appendAttributedString:),
+                              @selector(hookAppendAttributedString:));
     });
 }
 - (id)hookInitWithString:(NSString*)str {
@@ -732,6 +735,16 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         }else if (range.location < self.length){
             [self hookEnumerateAttributesInRange:NSMakeRange(range.location, self.length-range.location) options:opts usingBlock:block];
         }
+    }
+}
+- (void)hookAppendAttributedString:(NSAttributedString *)string {
+    @synchronized (self) {
+        if ([string isKindOfClass:[NSAttributedString class]] == NO ||
+            string.length == 0) {
+            SFAssert(NO, @"hookAppendAttributedString:string is nil or string is not AttributedString!");
+            return;
+        }
+        [self hookAppendAttributedString:string];
     }
 }
 @end
