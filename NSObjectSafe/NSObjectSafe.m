@@ -139,6 +139,9 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         swizzleInstanceMethod([NSObject class], @selector(removeObserver:forKeyPath:), @selector(hookRemoveObserver:forKeyPath:));
         swizzleInstanceMethod([NSObject class], @selector(methodSignatureForSelector:), @selector(hookMethodSignatureForSelector:));
         swizzleInstanceMethod([NSObject class], @selector(forwardInvocation:), @selector(hookForwardInvocation:));
+        
+        swizzleClassMethod(object_getClass([NSObject class]), @selector(methodSignatureForSelector:), @selector(hookClassMethodSignatureForSelector:));
+        swizzleClassMethod(object_getClass([NSObject class]), @selector(forwardInvocation:), @selector(hookClassForwardInvocation:));
     });
 }
 - (void) hookAddObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context
@@ -195,6 +198,29 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
     [[NSNotificationCenter defaultCenter] postNotificationName:NSSafeNotification object:self userInfo:@{@"invocation":invocation}];
     [[[NSSafeProxy new] autorelease] dealException:info];
 }
+
++ (NSMethodSignature*)hookClassMethodSignatureForSelector:(SEL)aSelector {
+    
+    NSMethodSignature* sig = [self hookClassMethodSignatureForSelector:aSelector];
+    if (!sig){
+        if (class_getMethodImplementation(object_getClass([NSObject class]), @selector(methodSignatureForSelector:)) != class_getMethodImplementation(object_getClass(self.class), @selector(methodSignatureForSelector:))){
+            return nil;
+        }
+        return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
+    }
+    return sig;
+}
+
++ (void)hookClassForwardInvocation:(NSInvocation*)invocation {
+    
+    NSString* info = [NSString stringWithFormat:@"unrecognized class selector [%@] sent to %@", NSStringFromSelector(invocation.selector), NSStringFromClass(self.class)];
+    [[NSNotificationCenter defaultCenter] postNotificationName:NSSafeNotification object:self userInfo:@{@"invocation":invocation}];
+    [[[NSSafeProxy new] autorelease] dealException:info];
+}
+
+- (void)setValue:(id)value forUndefinedKey:(NSString *)key{ SFAssert(NO, @"setValue:%@ forUndefinedKey:%@", value, key); }
+- (id)valueForUndefinedKey:(NSString *)key { SFAssert(NO, @"valueForUndefinedKey: %@", key); return nil; }
+- (void)setNilValueForKey:(NSString *)key { SFAssert(NO, @"setNilValueForKey: %@", key); }
 
 @end
 
@@ -539,9 +565,6 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
                               @selector(addAttributes:range:), @selector(hookAddAttributes:range:));
         
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
-                              @selector(addAttributes:range:), @selector(hookAddAttributes:range:));
-        
-        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
                               @selector(setAttributes:range:), @selector(hookSetAttributes:range:));
         
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
@@ -562,6 +585,9 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
                               @selector(enumerateAttributesInRange:options:usingBlock:), @selector(hookEnumerateAttributesInRange:options:usingBlock:));
         
+        swizzleInstanceMethod(NSClassFromString(@"NSConcreteMutableAttributedString"),
+                              @selector(appendAttributedString:),
+                              @selector(hookAppendAttributedString:));
     });
 }
 - (id)hookInitWithString:(NSString*)str {
@@ -711,6 +737,16 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         }
     }
 }
+- (void)hookAppendAttributedString:(NSAttributedString *)string {
+    @synchronized (self) {
+        if ([string isKindOfClass:[NSAttributedString class]] == NO ||
+            string.length == 0) {
+            SFAssert(NO, @"hookAppendAttributedString:string is nil or string is not AttributedString!");
+            return;
+        }
+        [self hookAppendAttributedString:string];
+    }
+}
 @end
 
 #pragma mark - NSArray
@@ -752,6 +788,8 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(objectAtIndex:), @selector(hookObjectAtIndex:));
         swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(subarrayWithRange:), @selector(hookSubarrayWithRange:));
         swizzleInstanceMethod(NSClassFromString(@"__NSArrayReversed"), @selector(objectAtIndexedSubscript:), @selector(hookObjectAtIndexedSubscript:));
+        
+        swizzleInstanceMethod(NSClassFromString(@"__NSPlaceholderArray"), @selector(initWithObjects:count:), @selector(hookInitWithObjects:count:));
     });
 }
 + (instancetype) hookArrayWithObject:(id)anObject
@@ -806,6 +844,21 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         }
         return [self hookArrayWithObjects:objs count:index];
     }
+}
+- (instancetype)hookInitWithObjects:(id  _Nonnull const [])objects count:(NSUInteger)cnt
+{
+     id safeObjects[cnt];
+     NSUInteger j = 0;
+     for (NSUInteger i = 0; i < cnt; i++) {
+          id obj = objects[i];
+          if (!obj) {
+               NSLog(@"error: anObject is nil");
+               continue;
+          }
+          safeObjects[j] = obj;
+          j++;
+     }
+     return [self hookInitWithObjects:safeObjects count:j];
 }
 @end
 
@@ -930,7 +983,7 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 
 @end
 
-#pragma mark - NSDictionary
+#pragma mark - NSData
 @implementation NSData (Safe)
 + (void)load
 {
@@ -1046,6 +1099,8 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         /* 类方法 */
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObject:forKey:) withMethod:@selector(hookDictionaryWithObject:forKey:)];
         [NSDictionary swizzleClassMethod:@selector(dictionaryWithObjects:forKeys:count:) withMethod:@selector(hookDictionaryWithObjects:forKeys:count:)];
+        
+        swizzleInstanceMethod(NSClassFromString(@"__NSPlaceholderDictionary"), @selector(initWithObjects:forKeys:count:), @selector(hookInitWithObjects:forKeys:count:));
     });
 }
 + (instancetype) hookDictionaryWithObject:(id)object forKey:(id)key
@@ -1069,6 +1124,23 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
         }
     }
     return [self hookDictionaryWithObjects:objs forKeys:ks count:index];
+}
+- (instancetype)hookInitWithObjects:(const id [])objects forKeys:(const id<NSCopying> [])keys count:(NSUInteger)cnt {
+    id safeObjects[cnt];
+    id safeKeys[cnt];
+    NSUInteger j = 0;
+    for (NSUInteger i = 0; i < cnt; i++) {
+        id key = keys[i];
+        id obj = objects[i];
+        if (!key || ! obj) {
+            NSLog(@"error: anObject is nil or anyKey is nil");
+            continue;
+        }
+        safeKeys[j] = key;
+        safeObjects[j] = obj;
+        j++;
+    }
+    return [self hookInitWithObjects:safeObjects forKeys:safeKeys count:j];
 }
 @end
 
@@ -1297,6 +1369,10 @@ void swizzleInstanceMethod(Class cls, SEL origSelector, SEL newSelector)
 - (void) hookSetObject:(id)value forKey:(NSString*)aKey
 {
     if (aKey) {
+        if (value && !([value isKindOfClass:NSString.class] || [value isKindOfClass:NSData.class] || [value isKindOfClass:NSNumber.class] || [value isKindOfClass:NSDate.class] || [value isKindOfClass:NSArray.class] || [value isKindOfClass:NSDictionary.class])) {
+            SFAssert(NO, @"NSUserDefaults stores Property List objects (NSString, NSData, NSNumber, NSDate, NSArray, and NSDictionary) ----- NSUserDefaults invalid args hookSetObject:[%@] forKey:[%@]", value, aKey);
+            return;
+        }
         [self hookSetObject:value forKey:aKey];
     } else {
         SFAssert(NO, @"NSUserDefaults invalid args hookSetObject:[%@] forKey:[%@]", value, aKey);
