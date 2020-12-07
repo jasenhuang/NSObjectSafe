@@ -10,7 +10,7 @@ Pod::Spec.new do |spec|
 
   # ―――  Spec Metadata  ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
   spec.name         = "DCObjectSafe"
-  spec.version      = "0.0.1"
+  spec.version      = "1.0.1"
   spec.summary      = "A short description of DCObjectSafe."
   spec.description  = <<-DESC
   Objective-C Runtime Swizzle
